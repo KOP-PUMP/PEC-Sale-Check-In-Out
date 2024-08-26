@@ -17,7 +17,7 @@ import 'package:http/http.dart' as http;
 import 'package:kop_checkin/model/user_model.dart';
 import 'package:kop_checkin/services/location_service.dart';
 import 'package:timezone/standalone.dart' as tz;
-import 'package:flutter_android_developer_mode/flutter_android_developer_mode.dart';
+
 
 class CheckinScreen extends StatefulWidget {
   const CheckinScreen({super.key});
@@ -644,8 +644,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   //     ),
                   //   ],
                   // ),
-                  checkOut == '--/--'
-                      ? Row(
+                  if (checkOut == '--/--') Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
@@ -671,17 +670,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
                               margin: const EdgeInsets.only(top: 40),
                               child: MaterialButton(
                                 onPressed: () async {
-                                  bool isDevMode =
-                                      await FlutterAndroidDeveloperMode
-                                          .isAndroidDeveloperModeEnabled;
-                                  if (isDevMode) {
-                                    _showMyDialog('Developer Mode Warning',
-                                        'Close the Developer Mode in your phone');
-                                    Timer(const Duration(milliseconds: 5000),
-                                        () {
-                                      exit(0);
-                                    });
-                                  }
+                                  
+                               
                                   _getCurrentLocation().then((value) {
                                     setState(() {
                                       Users.lat = value.latitude;
@@ -723,19 +713,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                     margin: const EdgeInsets.only(top: 24),
                                     child: MaterialButton(
                                       onPressed: () async {
-                                        bool isDevMode =
-                                            await FlutterAndroidDeveloperMode
-                                                .isAndroidDeveloperModeEnabled;
-                                        if (isDevMode) {
-                                          _showMyDialog(
-                                              'Developer Mode Warning',
-                                              'Close the Developer Mode in your phone');
-                                          Timer(
-                                              const Duration(
-                                                  milliseconds: 5000), () {
-                                            exit(0);
-                                          });
-                                        } else {
+                                       
+                                        
                                           tz.initializeTimeZone();
                                           var bangkok =
                                               tz.getLocation('Asia/Bangkok');
@@ -773,7 +752,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                               );
                                             });
                                           }
-                                        }
+                                        
                                       },
                                       color: Colors.green,
                                       textColor: Colors.white,
@@ -807,19 +786,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                     margin: const EdgeInsets.only(top: 24),
                                     child: MaterialButton(
                                       onPressed: () async {
-                                        bool isDevMode =
-                                            await FlutterAndroidDeveloperMode
-                                                .isAndroidDeveloperModeEnabled;
-                                        if (isDevMode) {
-                                          _showMyDialog(
-                                              'Developer Mode Warning',
-                                              'Close the Developer Mode in your phone');
-                                          Timer(
-                                              const Duration(
-                                                  milliseconds: 5000), () {
-                                            exit(0);
-                                          });
-                                        } else {
+                                       
+                                       
                                           tz.initializeTimeZone();
                                           var bangkok =
                                               tz.getLocation('Asia/Bangkok');
@@ -862,7 +830,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                               _selectedUser = null;
                                             });
                                           });
-                                        }
+                                      
                                       },
                                       color: Colors.red,
                                       textColor: Colors.white,
@@ -875,8 +843,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                     ),
                                   ),
                           ],
-                        )
-                      : Container(
+                        ) else Container(
                           margin: const EdgeInsets.only(top: 24),
                           child: Text(
                             'Today You have Check In',

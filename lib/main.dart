@@ -11,7 +11,6 @@ import 'package:month_year_picker/month_year_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:kop_checkin/services/location_service.dart';
 import 'package:in_app_update/in_app_update.dart';
-import 'package:flutter_android_developer_mode/flutter_android_developer_mode.dart';
 import 'package:timezone/standalone.dart' as tz;
 
 void main() async {
@@ -51,21 +50,10 @@ class _AuthCheckState extends State<AuthCheck> {
     super.initState();
     _getCurrentUser();
     _startLocationService();
-    checkForUpdate();
-    updateDevMode();
+    // checkForUpdate();
   }
 
-  void updateDevMode() async {
-    bool isDevMode =
-        await FlutterAndroidDeveloperMode.isAndroidDeveloperModeEnabled;
-    if (isDevMode) {
-      _showMyDialog(
-          'Developer Mode Warning', 'Close the Developer Mode in your phone');
-      Timer(const Duration(milliseconds: 5000), () {
-        exit(0);
-      });
-    }
-  }
+  
 
   Future<void> _showMyDialog(String title, String text) async {
     return showDialog<void>(
