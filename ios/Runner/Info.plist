@@ -28,6 +28,8 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>We use your location only during check-in and check-out to verify your presence at visits and confirm check-ins with the customer list. Your location data is securely stored and used solely for this purpose, in accordance with our privacy policy.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Deprecated, use NSLocationAlwaysAndWhenInUseUsageDescription instead.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
