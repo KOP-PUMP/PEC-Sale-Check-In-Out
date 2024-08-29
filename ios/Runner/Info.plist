@@ -44,6 +44,10 @@
 	<string>Main</string>
 	<key>UIStatusBarStyle</key>
 	<string></string>
+	<key>UISupportedDevices</key>
+    <array>
+        <string>iPhone</string>
+    </array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
