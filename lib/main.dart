@@ -52,6 +52,7 @@ class _AuthCheckState extends State<AuthCheck> {
     _startLocationService();
     // checkForUpdate();
   }
+  
 
   
 

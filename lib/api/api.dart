@@ -12,5 +12,5 @@ class API {
   static const getRowCheck = "$hostConnect/user/getRowDate.php";
   static const getAgenda = "$hostConnect/user/getAgenda.php";
   static const checklocation_index = "$hostConnect/user/checkLocation.php";
-    static const addCustomer = "$hostConnect/user/addCustomer.php";
+  static const addCustomer = "$hostConnect/user/addCustomer.php";
 }

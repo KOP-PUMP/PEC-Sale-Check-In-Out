@@ -30,8 +30,8 @@
 	<true/>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>We use your location only during check-in and check-out to verify your presence at visits and confirm check-ins with the customer list. Your location data is securely stored and used solely for this purpose, in accordance with our privacy policy.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Deprecated, use NSLocationAlwaysAndWhenInUseUsageDescription instead.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Your location is used to show your position on map, track your visit, and verify check-in with customer on list</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your location is used to show your position on map, track your visit, and verify check-in with customer on list</string>
 	<key>NSPhotoLibraryUsageDescription</key>

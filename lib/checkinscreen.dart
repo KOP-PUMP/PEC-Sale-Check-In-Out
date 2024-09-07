@@ -1,4 +1,5 @@
 // ignore_for_file: non_constant_identifier_names
+import 'dart:ffi';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'dart:convert';
@@ -17,12 +18,15 @@ import 'package:http/http.dart' as http;
 import 'package:kop_checkin/model/user_model.dart';
 import 'package:kop_checkin/services/location_service.dart';
 import 'package:timezone/standalone.dart' as tz;
-
+import 'dart:math';
 
 class CheckinScreen extends StatefulWidget {
-  const CheckinScreen({super.key});
+  final VoidCallback onLoad;
+
+  CheckinScreen(this.onLoad, {Key? key}) : super(key: key);
+
   @override
-  State<CheckinScreen> createState() => _CheckinScreenState();
+  _CheckinScreenState createState() => _CheckinScreenState();
 }
 
 class _CheckinScreenState extends State<CheckinScreen> {
@@ -30,6 +34,13 @@ class _CheckinScreenState extends State<CheckinScreen> {
   String? lat;
   String? long;
   String office = 'Bangkok';
+  double R = 6378137; // Earth's radius in meters
+  double originLat = 13.6566; // Example origin latitude
+  double originLng = 100.4682; // Example origin longitude
+  double rayonglat = 12.689955701966637; // Example new longitude
+  double raypnglng = 101.24222335507092; // Example new longitude
+
+  double radius = 50; // Radius in meters
 
   double screenHeight = 0;
   double screenWidth = 0;
@@ -78,6 +89,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
     _maker.addAll(_list);
     _getRecord();
     _startLocationService();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.onLoad();
+    });
   }
 
   void _startLocationService() async {
@@ -118,33 +132,46 @@ class _CheckinScreenState extends State<CheckinScreen> {
     return Geolocator.getCurrentPosition();
   }
 
-  // Future<void> _showMyDialog() async {
-  //   return showDialog<void>(
-  //     context: context,
-  //     barrierDismissible: false, // user must tap button!
-  //     builder: (BuildContext context) {
-  //       return AlertDialog(
-  //         title: const Text('Alert Mock App'),
-  //         content: const SingleChildScrollView(
-  //           child: ListBody(
-  //             children: <Widget>[
-  //               Text('Please turn off the mock app'),
-  //               // Text('Would you like to approve of this message?'),
-  //             ],
-  //           ),
-  //         ),
-  //         actions: <Widget>[
-  //           TextButton(
-  //             child: const Text('Ok'),
-  //             onPressed: () {
-  //               Navigator.of(context).pop();
-  //             },
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
+  /// Calculate the distance between two latitude and longitude points using the Haversine formula
+  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    // Check if the two points are the same (very small threshold for floating-point precision)
+    if (lat1 == lat2 && lon1 == lon2) {
+      return 0.0;
+    }
+
+    // Convert degrees to radians
+    double lat1Rad = lat1 * pi / 180;
+    double lon1Rad = lon1 * pi / 180;
+    double lat2Rad = lat2 * pi / 180;
+    double lon2Rad = lon2 * pi / 180;
+
+    // Differences between the latitudes and longitudes
+    double dLat = lat2Rad - lat1Rad;
+    double dLon = lon2Rad - lon1Rad;
+
+    // Haversine formula
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1Rad) * cos(lat2Rad) * sin(dLon / 2) * sin(dLon / 2);
+
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    // Distance in meters
+    double distance = R * c;
+    return distance;
+  }
+
+  /// Check if the point is out of range (more than the specified radius)
+  bool isOutOfRange(
+      double lat1, double lon1, double lat2, double lon2, double radius) {
+    double distance = calculateDistance(lat1, lon1, lat2, lon2);
+    // print(lat1);
+    // print(lon1);
+    // print(lat2);
+    // print(lon2);
+    // print(distance);
+    print(distance > radius);
+    return distance > radius;
+  }
 
   Future<void> _showMyDialog(String title, String text) async {
     return showDialog<void>(
@@ -318,22 +345,6 @@ class _CheckinScreenState extends State<CheckinScreen> {
     }
   }
 
-  // void _getOffice() async {
-  //   var res = await http.post(Uri.parse(API.getDocCheck), body: {
-  //     'doc_date': DateFormat('dd MMMM yyyy').format(DateTime.now()),
-  //     'user_code': Users.id,
-  //   });
-  //   if (res.statusCode == 200) {
-  //     try {
-  //       var resBody = jsonDecode(res.body);
-  //       setState(() {
-  //         office = resBody['office_province'];
-  //       });
-  //       // ignore: empty_catches
-  //     } catch (e) {}
-  //   }
-  // }
-
   Future _goToMe(double lat, double long) async {
     final GoogleMapController controller = await _controller.future;
     controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
@@ -362,7 +373,6 @@ class _CheckinScreenState extends State<CheckinScreen> {
   Widget build(BuildContext context) {
     screenHeight = MediaQuery.of(context).size.height;
     screenWidth = MediaQuery.of(context).size.width;
-
     return _isLoading
         ? Scaffold(
             body: SingleChildScrollView(
@@ -557,55 +567,178 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                 PopupPropsMultiSelection.modalBottomSheet(
                               showSearchBox: true,
                               itemBuilder: _customPopupItemBuilderExample2,
-                              favoriteItemProps: FavoriteItemProps(
-                                showFavoriteItems: true,
-                                favoriteItems: (us) {
-                                  var favorites = us
-                                      .where((e) =>
-                                          e.name.contains("O-0040") ||
-                                          e.name.contains("O-0019") ||
-                                          e.name.contains("O-0039"))
-                                      .toList();
-                                  // Sort favorites to ensure '0019' is first
-                                  favorites.sort((a, b) {
-                                    if (a.name.contains("O-0019")) {
-                                      return -1;
-                                    } else if (b.name.contains("O-0019")) {
-                                      return 1;
-                                    } else {
-                                      return 0;
-                                    }
-                                  });
-                                  return favorites;
-                                },
-                                favoriteItemBuilder:
-                                    (context, item, isSelected) {
-                                  return Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 20, vertical: 10),
-                                    decoration: BoxDecoration(
-                                        border: Border.all(color: Colors.grey),
-                                        borderRadius: BorderRadius.circular(10),
-                                        color: Colors.grey[100]),
-                                    child: Row(
-                                      children: [
-                                        Text(
-                                          item.code + " " + item.nameEN,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                              color: Colors.indigo),
+                              favoriteItemProps: isOutOfRange(
+                                          originLat,
+                                          originLng,
+                                          Users.lat,
+                                          Users.long,
+                                          radius) ==
+                                      false
+                                  ? FavoriteItemProps(
+                                      showFavoriteItems: true,
+                                      favoriteItems: (us) {
+                                        var favorites = us
+                                            .where((e) =>
+                                                e.name.contains("O-0040") ||
+                                                e.name.contains("O-0019") ||
+                                                e.name.contains("O-0041"))
+                                            .toList();
+                                        // Sort favorites to ensure '0019' is first
+                                        favorites.sort((a, b) {
+                                          if (a.name.contains("O-0019")) {
+                                            return -1;
+                                          } else if (b.name
+                                              .contains("O-0019")) {
+                                            return 1;
+                                          } else {
+                                            return 0;
+                                          }
+                                        });
+                                        return favorites;
+                                      },
+                                      favoriteItemBuilder:
+                                          (context, item, isSelected) {
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 20, vertical: 10),
+                                          decoration: BoxDecoration(
+                                              border: Border.all(
+                                                  color: Colors.grey),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              color: Colors.grey[100]),
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                item.customer_name_show,
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                    color: Colors.indigo),
+                                              ),
+                                              const Padding(
+                                                  padding:
+                                                      EdgeInsets.only(left: 8)),
+                                              isSelected
+                                                  ? const Icon(
+                                                      Icons.check_box_outlined)
+                                                  : const SizedBox.shrink(),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : isOutOfRange(rayonglat, raypnglng,  Users.lat,
+                                          Users.long, radius) ==
+                                          false
+                                      ? FavoriteItemProps(
+                                          showFavoriteItems: true,
+                                          favoriteItems: (us) {
+                                            var favorites = us
+                                                .where((e) =>
+                                                    e.name.contains("O-0040") ||
+                                                    e.name.contains("O-0041") ||
+                                                    e.name.contains("O-0039"))
+                                                .toList();
+                                            // Sort favorites to ensure '0019' is first
+                                            favorites.sort((a, b) {
+                                              if (a.name.contains("O-0019")) {
+                                                return -1;
+                                              } else if (b.name
+                                                  .contains("O-0019")) {
+                                                return 1;
+                                              } else {
+                                                return 0;
+                                              }
+                                            });
+                                            return favorites;
+                                          },
+                                          favoriteItemBuilder:
+                                              (context, item, isSelected) {
+                                            return Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 20,
+                                                      vertical: 10),
+                                              decoration: BoxDecoration(
+                                                  border: Border.all(
+                                                      color: Colors.grey),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  color: Colors.grey[100]),
+                                              child: Row(
+                                                children: [
+                                                  Text(
+                                                    item.customer_name_show,
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(
+                                                        color: Colors.indigo),
+                                                  ),
+                                                  const Padding(
+                                                      padding: EdgeInsets.only(
+                                                          left: 8)),
+                                                  isSelected
+                                                      ? const Icon(Icons
+                                                          .check_box_outlined)
+                                                      : const SizedBox.shrink(),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : FavoriteItemProps(
+                                          showFavoriteItems: true,
+                                          favoriteItems: (us) {
+                                            var favorites = us
+                                                .where((e) =>
+                                                    e.name.contains("O-0040") ||
+                                                    e.name.contains("O-0041"))
+                                                .toList();
+                                            // Sort favorites to ensure '0019' is first
+                                            favorites.sort((a, b) {
+                                              if (a.name.contains("O-0019")) {
+                                                return -1;
+                                              } else if (b.name
+                                                  .contains("O-0019")) {
+                                                return 1;
+                                              } else {
+                                                return 0;
+                                              }
+                                            });
+                                            return favorites;
+                                          },
+                                          favoriteItemBuilder:
+                                              (context, item, isSelected) {
+                                            return Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 20,
+                                                      vertical: 10),
+                                              decoration: BoxDecoration(
+                                                  border: Border.all(
+                                                      color: Colors.grey),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  color: Colors.grey[100]),
+                                              child: Row(
+                                                children: [
+                                                  Text(
+                                                    item.customer_name_show,
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(
+                                                        color: Colors.indigo),
+                                                  ),
+                                                  const Padding(
+                                                      padding: EdgeInsets.only(
+                                                          left: 8)),
+                                                  isSelected
+                                                      ? const Icon(Icons
+                                                          .check_box_outlined)
+                                                      : const SizedBox.shrink(),
+                                                ],
+                                              ),
+                                            );
+                                          },
                                         ),
-                                        const Padding(
-                                            padding: EdgeInsets.only(left: 8)),
-                                        isSelected
-                                            ? const Icon(
-                                                Icons.check_box_outlined)
-                                            : const SizedBox.shrink(),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
                             ),
                           ),
                         ),
@@ -644,216 +777,207 @@ class _CheckinScreenState extends State<CheckinScreen> {
                   //     ),
                   //   ],
                   // ),
-                  if (checkOut == '--/--') Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Container(
-                              width: 75,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
-                                boxShadow: [
-                                  BoxShadow(
-                                      color: Colors.grey.shade600,
-                                      blurRadius: 5,
-                                      spreadRadius: 1,
-                                      offset: const Offset(4, 4)),
-                                  const BoxShadow(
-                                      color: Colors.white,
-                                      blurRadius: 5,
-                                      spreadRadius: 1,
-                                      offset: Offset(-4, -4))
-                                ],
-                                borderRadius: const BorderRadius.all(
-                                    Radius.circular(100)),
-                              ),
-                              margin: const EdgeInsets.only(top: 40),
-                              child: MaterialButton(
-                                onPressed: () async {
-                                  
-                               
-                                  _getCurrentLocation().then((value) {
-                                    setState(() {
-                                      Users.lat = value.latitude;
-                                      Users.long = value.longitude;
-                                    });
-                                  });
-                                  _goToMe(Users.lat, Users.long);
-                                },
-                                color: Colors.blue,
-                                textColor: Colors.white,
-                                padding: const EdgeInsets.all(16),
-                                shape: const CircleBorder(),
-                                child: const Icon(
-                                  FontAwesomeIcons.mapLocationDot,
-                                  size: 40,
-                                ),
-                              ),
-                            ),
-                            checkIn == '--/--'
-                                ? Container(
-                                    width: 75,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade300,
-                                      boxShadow: [
-                                        BoxShadow(
-                                            color: Colors.grey.shade600,
-                                            blurRadius: 5,
-                                            spreadRadius: 1,
-                                            offset: const Offset(4, 4)),
-                                        const BoxShadow(
-                                            color: Colors.white,
-                                            blurRadius: 5,
-                                            spreadRadius: 1,
-                                            offset: Offset(-4, -4))
-                                      ],
-                                      borderRadius: const BorderRadius.all(
-                                          Radius.circular(100)),
-                                    ),
-                                    margin: const EdgeInsets.only(top: 24),
-                                    child: MaterialButton(
-                                      onPressed: () async {
-                                       
-                                        
-                                          tz.initializeTimeZone();
-                                          var bangkok =
-                                              tz.getLocation('Asia/Bangkok');
-                                          var now = tz.TZDateTime.now(bangkok);
-                                          String remark =
-                                              _locationController.text.trim();
-                                          if (Users.customer.isEmpty &&
-                                              remark.isEmpty) {
-                                            _showMyDialog('Missing Value',
-                                                'Customer Or Remark are not must be empty!');
-                                          } else {
-                                            _goToMe(Users.lat, Users.long);
-                                            List<Placemark> placemark =
-                                                await placemarkFromCoordinates(
-                                                    Users.lat, Users.long);
-                                            now = tz.TZDateTime.now(bangkok);
-                                            setState(() {
-                                              locationCheckin =
-                                                  "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}";
-                                              docdate =
-                                                  DateFormat('dd MMMM yyyy')
-                                                      .format(now);
-                                            });
-
-                                            setState(() {
-                                              checkIn = DateFormat('hh:mm')
-                                                  .format(now);
-                                              addRecordDetails(
-                                                "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}",
-                                                Users.location_index,
-                                                DateFormat('hh:mm a')
-                                                    .format(now),
-                                                DateFormat('yyyy-MM-dd H:m:s')
-                                                    .format(now),
-                                              );
-                                            });
-                                          }
-                                        
-                                      },
-                                      color: Colors.green,
-                                      textColor: Colors.white,
-                                      padding: const EdgeInsets.all(16),
-                                      shape: const CircleBorder(),
-                                      child: const Icon(
-                                        FontAwesomeIcons.arrowRightToBracket,
-                                        size: 40,
-                                      ),
-                                    ),
-                                  )
-                                : Container(
-                                    width: 75,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade300,
-                                      boxShadow: [
-                                        BoxShadow(
-                                            color: Colors.grey.shade600,
-                                            blurRadius: 5,
-                                            spreadRadius: 1,
-                                            offset: const Offset(4, 4)),
-                                        const BoxShadow(
-                                            color: Colors.white,
-                                            blurRadius: 5,
-                                            spreadRadius: 1,
-                                            offset: Offset(-4, -4))
-                                      ],
-                                      borderRadius: const BorderRadius.all(
-                                          Radius.circular(150)),
-                                    ),
-                                    margin: const EdgeInsets.only(top: 24),
-                                    child: MaterialButton(
-                                      onPressed: () async {
-                                       
-                                       
-                                          tz.initializeTimeZone();
-                                          var bangkok =
-                                              tz.getLocation('Asia/Bangkok');
-                                          var now = tz.TZDateTime.now(bangkok);
-                                          _getCurrentLocation().then((value) {
-                                            setState(() {
-                                              Users.lat = value.latitude;
-                                              Users.long = value.longitude;
-                                            });
-                                          });
-                                          now = tz.TZDateTime.now(bangkok);
-                                          _goToMe(Users.lat, Users.long);
-                                          List<Placemark> placemark =
-                                              await placemarkFromCoordinates(
-                                                  Users.lat, Users.long);
-                                          setState(() {
-                                            locationCheckout =
-                                                "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}";
-                                            docdate = DateFormat('dd MMMM yyyy')
-                                                .format(now);
-                                            updateRecordDetails(
-                                                "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}",
-                                                Users.location_index,
-                                                DateFormat('hh:mm a')
-                                                    .format(now),
-                                                DateFormat('yyyy-MM-dd H:m:s')
-                                                    .format(now));
-                                            checkOut =
-                                                DateFormat('hh:mm').format(now);
-                                          });
-                                          Timer(
-                                              const Duration(
-                                                  milliseconds: 5000), () {
-                                            setState(() {
-                                              Users.location_index++;
-                                              checkOut = '--/--';
-                                              checkIn = '--/--';
-                                              Users.customer = '';
-                                              _locationController.clear();
-                                              _selectedUser = null;
-                                            });
-                                          });
-                                      
-                                      },
-                                      color: Colors.red,
-                                      textColor: Colors.white,
-                                      padding: const EdgeInsets.all(16),
-                                      shape: const CircleBorder(),
-                                      child: const Icon(
-                                        FontAwesomeIcons.arrowRightFromBracket,
-                                        size: 40,
-                                      ),
-                                    ),
-                                  ),
-                          ],
-                        ) else Container(
-                          margin: const EdgeInsets.only(top: 24),
-                          child: Text(
-                            'Today You have Check In',
-                            style: TextStyle(
-                              color: Colors.black54,
-                              fontFamily: "NexaBold",
-                              fontSize: screenWidth / 18,
+                  if (checkOut == '--/--')
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Container(
+                          width: 75,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.grey.shade600,
+                                  blurRadius: 5,
+                                  spreadRadius: 1,
+                                  offset: const Offset(4, 4)),
+                              const BoxShadow(
+                                  color: Colors.white,
+                                  blurRadius: 5,
+                                  spreadRadius: 1,
+                                  offset: Offset(-4, -4))
+                            ],
+                            borderRadius:
+                                const BorderRadius.all(Radius.circular(100)),
+                          ),
+                          margin: const EdgeInsets.only(top: 40),
+                          child: MaterialButton(
+                            onPressed: () async {
+                              _getCurrentLocation().then((value) {
+                                setState(() {
+                                  Users.lat = value.latitude;
+                                  Users.long = value.longitude;
+                                });
+                              });
+                              _goToMe(Users.lat, Users.long);
+                            },
+                            color: Colors.blue,
+                            textColor: Colors.white,
+                            padding: const EdgeInsets.all(16),
+                            shape: const CircleBorder(),
+                            child: const Icon(
+                              FontAwesomeIcons.mapLocationDot,
+                              size: 40,
                             ),
                           ),
                         ),
+                        checkIn == '--/--'
+                            ? Container(
+                                width: 75,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: Colors.grey.shade600,
+                                        blurRadius: 5,
+                                        spreadRadius: 1,
+                                        offset: const Offset(4, 4)),
+                                    const BoxShadow(
+                                        color: Colors.white,
+                                        blurRadius: 5,
+                                        spreadRadius: 1,
+                                        offset: Offset(-4, -4))
+                                  ],
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(100)),
+                                ),
+                                margin: const EdgeInsets.only(top: 24),
+                                child: MaterialButton(
+                                  onPressed: () async {
+                                    tz.initializeTimeZone();
+                                    var bangkok =
+                                        tz.getLocation('Asia/Bangkok');
+                                    var now = tz.TZDateTime.now(bangkok);
+                                    String remark =
+                                        _locationController.text.trim();
+                                    if (Users.customer.isEmpty &&
+                                        remark.isEmpty) {
+                                      _showMyDialog('Missing Value',
+                                          'Customer Or Remark are not must be empty!');
+                                    } else {
+                                      _goToMe(Users.lat, Users.long);
+                                      List<Placemark> placemark =
+                                          await placemarkFromCoordinates(
+                                              Users.lat, Users.long);
+                                      now = tz.TZDateTime.now(bangkok);
+                                      setState(() {
+                                        locationCheckin =
+                                            "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}";
+                                        docdate = DateFormat('dd MMMM yyyy')
+                                            .format(now);
+                                      });
+
+                                      setState(() {
+                                        checkIn =
+                                            DateFormat('hh:mm').format(now);
+                                        addRecordDetails(
+                                          "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}",
+                                          Users.location_index,
+                                          DateFormat('hh:mm a').format(now),
+                                          DateFormat('yyyy-MM-dd H:m:s')
+                                              .format(now),
+                                        );
+                                      });
+                                    }
+                                  },
+                                  color: Colors.green,
+                                  textColor: Colors.white,
+                                  padding: const EdgeInsets.all(16),
+                                  shape: const CircleBorder(),
+                                  child: const Icon(
+                                    FontAwesomeIcons.arrowRightToBracket,
+                                    size: 40,
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                width: 75,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  boxShadow: [
+                                    BoxShadow(
+                                        color: Colors.grey.shade600,
+                                        blurRadius: 5,
+                                        spreadRadius: 1,
+                                        offset: const Offset(4, 4)),
+                                    const BoxShadow(
+                                        color: Colors.white,
+                                        blurRadius: 5,
+                                        spreadRadius: 1,
+                                        offset: Offset(-4, -4))
+                                  ],
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(150)),
+                                ),
+                                margin: const EdgeInsets.only(top: 24),
+                                child: MaterialButton(
+                                  onPressed: () async {
+                                    tz.initializeTimeZone();
+                                    var bangkok =
+                                        tz.getLocation('Asia/Bangkok');
+                                    var now = tz.TZDateTime.now(bangkok);
+                                    _getCurrentLocation().then((value) {
+                                      setState(() {
+                                        Users.lat = value.latitude;
+                                        Users.long = value.longitude;
+                                      });
+                                    });
+                                    now = tz.TZDateTime.now(bangkok);
+                                    _goToMe(Users.lat, Users.long);
+                                    List<Placemark> placemark =
+                                        await placemarkFromCoordinates(
+                                            Users.lat, Users.long);
+                                    setState(() {
+                                      locationCheckout =
+                                          "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}";
+                                      docdate = DateFormat('dd MMMM yyyy')
+                                          .format(now);
+                                      updateRecordDetails(
+                                          "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}",
+                                          Users.location_index,
+                                          DateFormat('hh:mm a').format(now),
+                                          DateFormat('yyyy-MM-dd H:m:s')
+                                              .format(now));
+                                      checkOut =
+                                          DateFormat('hh:mm').format(now);
+                                    });
+                                    Timer(const Duration(milliseconds: 5000),
+                                        () {
+                                      setState(() {
+                                        Users.location_index++;
+                                        checkOut = '--/--';
+                                        checkIn = '--/--';
+                                        Users.customer = '';
+                                        _locationController.clear();
+                                        _selectedUser = null;
+                                      });
+                                    });
+                                  },
+                                  color: Colors.red,
+                                  textColor: Colors.white,
+                                  padding: const EdgeInsets.all(16),
+                                  shape: const CircleBorder(),
+                                  child: const Icon(
+                                    FontAwesomeIcons.arrowRightFromBracket,
+                                    size: 40,
+                                  ),
+                                ),
+                              ),
+                      ],
+                    )
+                  else
+                    Container(
+                      margin: const EdgeInsets.only(top: 24),
+                      child: Text(
+                        'Today You have Check In',
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontFamily: "NexaBold",
+                          fontSize: screenWidth / 18,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -922,7 +1046,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
             ),
       child: ListTile(
         selected: isSelected,
-        title: Text('${item.name} ${item.nameEN} '),
+        title: Text('${item.nameTH} ${item.nameEN} '),
       ),
     );
   }

@@ -1,18 +1,11 @@
 // import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-// import 'package:kop_checkin/agenda.dart';
 import 'package:kop_checkin/agendaJson.dart';
-// import 'package:intl/intl.dart';
-// import 'package:kop_checkin/api/api.dart';
 import 'package:kop_checkin/calendar.dart';
 import 'package:kop_checkin/checkinscreen.dart';
-// import 'package:kop_checkin/color_picker_demo.dart';
-// import 'package:kop_checkin/dropdown_search.dart';
-// import 'package:kop_checkin/model/user.dart';
-// import 'package:kop_checkin/profile.dart';
-// import 'package:http/http.dart' as http;
-
+import 'package:kop_checkin/model/user.dart';
+import 'package:geolocator/geolocator.dart';
 
 class HomeScreeen extends StatefulWidget {
   const HomeScreeen({super.key});
@@ -22,8 +15,6 @@ class HomeScreeen extends StatefulWidget {
 }
 
 class _HomeScreeenState extends State<HomeScreeen> {
-
-
   double screenHeight = 0;
   double screenWidth = 0;
   Color primary = const Color.fromRGBO(12, 45, 92, 1);
@@ -41,6 +32,27 @@ class _HomeScreeenState extends State<HomeScreeen> {
       currerntIndex = newIndex;
     });
   }
+
+
+
+  Future<Position> _getCurrentLocation() async {
+    bool serviceEnable = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnable) {
+      return Future.error('Location service are Disable');
+    }
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return Future.error('Location permission are denied');
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error('Location permissino are denied, we cannot request');
+    }
+    return Geolocator.getCurrentPosition();
+  }
+
   @override
   Widget build(BuildContext context) {
     screenHeight = MediaQuery.of(context).size.height;
@@ -48,9 +60,17 @@ class _HomeScreeenState extends State<HomeScreeen> {
     return Scaffold(
       body: IndexedStack(
         index: currerntIndex,
-        children: const [
+        children: [
           CalendarScreen(),
-          CheckinScreen(),
+          CheckinScreen(() {
+            _getCurrentLocation().then((value) {
+              setState(() {
+                Users.lat = value.latitude;
+                Users.long = value.longitude;
+              });
+            });
+            print('${Users.lat} ${Users.long}');
+          }),
           CalendarExample(),
           // ColorPickerDemo(),
         ],
