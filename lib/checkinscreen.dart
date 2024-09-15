@@ -369,6 +369,29 @@ class _CheckinScreenState extends State<CheckinScreen> {
     );
   }
 
+  Future<bool?> _onBeforePopupOpening(UserModel? selectedUser) async {
+    // Simulate some asynchronous operation, e.g., fetching data from an API
+    _getCurrentLocation().then((value) {
+      setState(() {
+        Users.lat = value.latitude;
+        Users.long = value.longitude;
+      });
+    });
+    print(Users.lat);
+    print(Users.long);
+
+    await Future.delayed(Duration(seconds: 1000));
+
+    if (selectedUser == null) {
+      print("No user selected, allowing popup to open");
+      return true; // Allow popup to open
+    } else {
+      print("Selected user: ${selectedUser.name}");
+      // Perform additional checks if needed
+      return true; // Return true or false based on your logic
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     screenHeight = MediaQuery.of(context).size.height;
@@ -549,6 +572,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                           alignment: Alignment.centerLeft,
                           child: DropdownSearch<UserModel>(
                             items: userList,
+                            onBeforePopupOpening: _onBeforePopupOpening,
                             dropdownDecoratorProps:
                                 const DropDownDecoratorProps(
                               dropdownSearchDecoration: InputDecoration(
@@ -627,8 +651,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                         );
                                       },
                                     )
-                                  : isOutOfRange(rayonglat, raypnglng,  Users.lat,
-                                          Users.long, radius) ==
+                                  : isOutOfRange(rayonglat, raypnglng,
+                                              Users.lat, Users.long, radius) ==
                                           false
                                       ? FavoriteItemProps(
                                           showFavoriteItems: true,
