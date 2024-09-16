@@ -85,11 +85,11 @@ class _AuthCheckState extends State<AuthCheck> {
 
   void _startLocationService() async {
     LocationService().initialize();
-    LocationService().getLatetude().then((value) {
+    LocationService().getLatitude().then((value) {
       setState(() {
         Users.lat = value!;
       });
-      LocationService().getLongtetude().then((value) {
+      LocationService().getLongitude().then((value) {
         setState(() {
           Users.long = value!;
         });

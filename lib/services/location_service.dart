@@ -25,11 +25,11 @@ class LocationService {
     }
   }
 
-  Future<double?> getLatetude() async{
+  Future<double?> getLatitude() async{
     _locData = await location.getLocation();
     return _locData.latitude;
   }
-   Future<double?> getLongtetude() async{
+   Future<double?> getLongitude() async{
     _locData = await location.getLocation();
     return _locData.longitude;
   }

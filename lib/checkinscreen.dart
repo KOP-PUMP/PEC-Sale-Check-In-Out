@@ -1,6 +1,4 @@
 // ignore_for_file: non_constant_identifier_names
-import 'dart:ffi';
-import 'dart:io';
 import 'package:dio/dio.dart';
 import 'dart:convert';
 import 'package:dropdown_search/dropdown_search.dart';
@@ -14,6 +12,7 @@ import 'package:kop_checkin/model/user.dart';
 import 'package:intl/intl.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+// ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
 import 'package:kop_checkin/model/user_model.dart';
 import 'package:kop_checkin/services/location_service.dart';
@@ -23,9 +22,10 @@ import 'dart:math';
 class CheckinScreen extends StatefulWidget {
   final VoidCallback onLoad;
 
-  CheckinScreen(this.onLoad, {Key? key}) : super(key: key);
+  const CheckinScreen(this.onLoad, {super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _CheckinScreenState createState() => _CheckinScreenState();
 }
 
@@ -38,7 +38,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
   double originLat = 13.6566; // Example origin latitude
   double originLng = 100.4682; // Example origin longitude
   double rayonglat = 12.689955701966637; // Example new longitude
-  double raypnglng = 101.24222335507092; // Example new longitude
+  double rayonglng = 101.24222335507092; // Example new longitude
 
   double radius = 50; // Radius in meters
 
@@ -63,19 +63,19 @@ class _CheckinScreenState extends State<CheckinScreen> {
   late Position currentLocation;
 
   final _locationController = TextEditingController();
-  final _customerController = TextEditingController();
   String customer = '';
   Timer? timer;
 
   final List<Marker> _list = [
-    Marker(
-        markerId: const MarkerId('1'),
-        position: LatLng(Users.lat, Users.long),
-        infoWindow: const InfoWindow(title: 'You are Here !'))
+    // Marker(
+    //     markerId: const MarkerId('1'),
+    //     position: LatLng(Users.lat, Users.long),
+    //     infoWindow: const InfoWindow(title: 'You are Here !'))
   ];
 
   final Completer<GoogleMapController> _controller = Completer();
   final List<Marker> _maker = [];
+  
 
   List<String> officeProvince = [
     "Bangkok",
@@ -96,11 +96,11 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
   void _startLocationService() async {
     LocationService().initialize();
-    LocationService().getLatetude().then((value) {
+    LocationService().getLatitude().then((value) {
       setState(() {
         Users.lat = value!;
       });
-      LocationService().getLongtetude().then((value) {
+      LocationService().getLongitude().then((value) {
         setState(() {
           Users.long = value!;
         });
@@ -127,7 +127,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       }
     }
     if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissino are denied, we cannot request');
+      return Future.error('Location permissin are denied, we cannot request');
     }
     return Geolocator.getCurrentPosition();
   }
@@ -169,7 +169,9 @@ class _CheckinScreenState extends State<CheckinScreen> {
     // print(lat2);
     // print(lon2);
     // print(distance);
-    print(distance > radius);
+    if (kDebugMode) {
+      print(distance > radius);
+    }
     return distance > radius;
   }
 
@@ -351,45 +353,22 @@ class _CheckinScreenState extends State<CheckinScreen> {
       target: LatLng(lat, long),
       zoom: 16,
     )));
-    _maker.add(
-      Marker(
-        markerId: const MarkerId('2'),
-        position: LatLng(lat, long),
-        infoWindow: const InfoWindow(
-            title: 'My Current Position', snippet: 'ที่อยุ๋ปัจจุบัน'),
-      ),
-    );
+    // _maker.add(
+    //   Marker(
+    //     markerId: const MarkerId('2'),
+    //     position: LatLng(lat, long),
+    //     infoWindow: const InfoWindow(
+    //         title: 'My Current Position', snippet: 'ที่อยุ๋ปัจจุบัน'),
+    //   ),
+    // );
   }
 
   void clearItemBuilder() {
-    PopupPropsMultiSelection.modalBottomSheet(
+    const PopupPropsMultiSelection.modalBottomSheet(
       showSearchBox: true,
       itemBuilder: null,
       // Other properties
     );
-  }
-
-  Future<bool?> _onBeforePopupOpening(UserModel? selectedUser) async {
-    // Simulate some asynchronous operation, e.g., fetching data from an API
-    _getCurrentLocation().then((value) {
-      setState(() {
-        Users.lat = value.latitude;
-        Users.long = value.longitude;
-      });
-    });
-    print(Users.lat);
-    print(Users.long);
-
-    await Future.delayed(Duration(seconds: 1000));
-
-    if (selectedUser == null) {
-      print("No user selected, allowing popup to open");
-      return true; // Allow popup to open
-    } else {
-      print("Selected user: ${selectedUser.name}");
-      // Perform additional checks if needed
-      return true; // Return true or false based on your logic
-    }
   }
 
   @override
@@ -428,26 +407,24 @@ class _CheckinScreenState extends State<CheckinScreen> {
                         ),
                       ),
                       Expanded(
-                        child: Container(
-                          child: RichText(
-                            text: TextSpan(
-                              text: DateTime.now().day.toString(),
-                              style: TextStyle(
-                                color: primary,
-                                fontSize: screenWidth / 20,
-                                fontFamily: 'NexaBold',
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: DateFormat(' MMMM yyyy')
-                                      .format(DateTime.now()),
-                                  style: TextStyle(
-                                      fontFamily: 'NexaBold',
-                                      fontSize: screenWidth / 22,
-                                      color: Colors.black54),
-                                )
-                              ],
+                        child: RichText(
+                          text: TextSpan(
+                            text: DateTime.now().day.toString(),
+                            style: TextStyle(
+                              color: primary,
+                              fontSize: screenWidth / 20,
+                              fontFamily: 'NexaBold',
                             ),
+                            children: [
+                              TextSpan(
+                                text: DateFormat(' MMMM yyyy')
+                                    .format(DateTime.now()),
+                                style: TextStyle(
+                                    fontFamily: 'NexaBold',
+                                    fontSize: screenWidth / 22,
+                                    color: Colors.black54),
+                              )
+                            ],
                           ),
                         ),
                       ),
@@ -572,9 +549,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
                           alignment: Alignment.centerLeft,
                           child: DropdownSearch<UserModel>(
                             items: userList,
-                            onBeforePopupOpening: _onBeforePopupOpening,
-                            dropdownDecoratorProps:
-                                const DropDownDecoratorProps(
+                            dropdownDecoratorProps: const DropDownDecoratorProps(
                               dropdownSearchDecoration: InputDecoration(
                                 labelText: "Customer",
                                 filled: true,
@@ -587,32 +562,39 @@ class _CheckinScreenState extends State<CheckinScreen> {
                             selectedItem: _selectedUser,
                             asyncItems: (filter) => getData(filter),
                             compareFn: (i, s) => i.isEqual(s),
-                            popupProps:
-                                PopupPropsMultiSelection.modalBottomSheet(
+                            // Corrected onBeforePopupOpening with parameter
+                            onBeforePopupOpening: (popupProps) async {
+                              // Refresh the location here
+                              await _getCurrentLocation().then((value) {
+                                setState(() {
+                                  Users.lat = value.latitude;
+                                  Users.long = value.longitude;
+                                });
+                              });
+                              _goToMe(Users.lat, Users.long);
+                              return true; // Return true to continue opening the popup
+                            },
+                            popupProps: PopupPropsMultiSelection.modalBottomSheet(
                               showSearchBox: true,
                               itemBuilder: _customPopupItemBuilderExample2,
+                              // No need for onBeforePopupOpening here
                               favoriteItemProps: isOutOfRange(
-                                          originLat,
-                                          originLng,
-                                          Users.lat,
-                                          Users.long,
-                                          radius) ==
-                                      false
+                                originLat,
+                                originLng,
+                                Users.lat,
+                                Users.long,
+                                radius,
+                              ) == false
                                   ? FavoriteItemProps(
                                       showFavoriteItems: true,
                                       favoriteItems: (us) {
                                         var favorites = us
-                                            .where((e) =>
-                                                e.name.contains("O-0040") ||
-                                                e.name.contains("O-0019") ||
-                                                e.name.contains("O-0041"))
+                                            .where((e) => e.name.contains("O-0040") || e.name.contains("O-0019") || e.name.contains("O-0041"))
                                             .toList();
-                                        // Sort favorites to ensure '0019' is first
                                         favorites.sort((a, b) {
                                           if (a.name.contains("O-0019")) {
                                             return -1;
-                                          } else if (b.name
-                                              .contains("O-0019")) {
+                                          } else if (b.name.contains("O-0019")) {
                                             return 1;
                                           } else {
                                             return 0;
@@ -620,55 +602,39 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                         });
                                         return favorites;
                                       },
-                                      favoriteItemBuilder:
-                                          (context, item, isSelected) {
+                                      favoriteItemBuilder: (context, item, isSelected) {
                                         return Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 20, vertical: 10),
+                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                           decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  color: Colors.grey),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              color: Colors.grey[100]),
+                                            border: Border.all(color: Colors.grey),
+                                            borderRadius: BorderRadius.circular(10),
+                                            color: Colors.grey[100],
+                                          ),
                                           child: Row(
                                             children: [
                                               Text(
                                                 item.customer_name_show,
                                                 textAlign: TextAlign.center,
-                                                style: const TextStyle(
-                                                    color: Colors.indigo),
+                                                style: const TextStyle(color: Colors.indigo),
                                               ),
-                                              const Padding(
-                                                  padding:
-                                                      EdgeInsets.only(left: 8)),
-                                              isSelected
-                                                  ? const Icon(
-                                                      Icons.check_box_outlined)
-                                                  : const SizedBox.shrink(),
+                                              const Padding(padding: EdgeInsets.only(left: 8)),
+                                              isSelected ? const Icon(Icons.check_box_outlined) : const SizedBox.shrink(),
                                             ],
                                           ),
                                         );
                                       },
                                     )
-                                  : isOutOfRange(rayonglat, raypnglng,
-                                              Users.lat, Users.long, radius) ==
-                                          false
+                                  : isOutOfRange(rayonglat, rayonglng, Users.lat, Users.long, radius) == false
                                       ? FavoriteItemProps(
                                           showFavoriteItems: true,
                                           favoriteItems: (us) {
                                             var favorites = us
-                                                .where((e) =>
-                                                    e.name.contains("O-0040") ||
-                                                    e.name.contains("O-0041") ||
-                                                    e.name.contains("O-0039"))
+                                                .where((e) => e.name.contains("O-0040") || e.name.contains("O-0041") || e.name.contains("O-0039"))
                                                 .toList();
-                                            // Sort favorites to ensure '0019' is first
                                             favorites.sort((a, b) {
                                               if (a.name.contains("O-0019")) {
                                                 return -1;
-                                              } else if (b.name
-                                                  .contains("O-0019")) {
+                                              } else if (b.name.contains("O-0019")) {
                                                 return 1;
                                               } else {
                                                 return 0;
@@ -676,34 +642,23 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                             });
                                             return favorites;
                                           },
-                                          favoriteItemBuilder:
-                                              (context, item, isSelected) {
+                                          favoriteItemBuilder: (context, item, isSelected) {
                                             return Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 20,
-                                                      vertical: 10),
+                                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                               decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                      color: Colors.grey),
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                  color: Colors.grey[100]),
+                                                border: Border.all(color: Colors.grey),
+                                                borderRadius: BorderRadius.circular(10),
+                                                color: Colors.grey[100],
+                                              ),
                                               child: Row(
                                                 children: [
                                                   Text(
                                                     item.customer_name_show,
                                                     textAlign: TextAlign.center,
-                                                    style: const TextStyle(
-                                                        color: Colors.indigo),
+                                                    style: const TextStyle(color: Colors.indigo),
                                                   ),
-                                                  const Padding(
-                                                      padding: EdgeInsets.only(
-                                                          left: 8)),
-                                                  isSelected
-                                                      ? const Icon(Icons
-                                                          .check_box_outlined)
-                                                      : const SizedBox.shrink(),
+                                                  const Padding(padding: EdgeInsets.only(left: 8)),
+                                                  isSelected ? const Icon(Icons.check_box_outlined) : const SizedBox.shrink(),
                                                 ],
                                               ),
                                             );
@@ -713,16 +668,12 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                           showFavoriteItems: true,
                                           favoriteItems: (us) {
                                             var favorites = us
-                                                .where((e) =>
-                                                    e.name.contains("O-0040") ||
-                                                    e.name.contains("O-0041"))
+                                                .where((e) => e.name.contains("O-0040") || e.name.contains("O-0041"))
                                                 .toList();
-                                            // Sort favorites to ensure '0019' is first
                                             favorites.sort((a, b) {
                                               if (a.name.contains("O-0019")) {
                                                 return -1;
-                                              } else if (b.name
-                                                  .contains("O-0019")) {
+                                              } else if (b.name.contains("O-0019")) {
                                                 return 1;
                                               } else {
                                                 return 0;
@@ -730,34 +681,23 @@ class _CheckinScreenState extends State<CheckinScreen> {
                                             });
                                             return favorites;
                                           },
-                                          favoriteItemBuilder:
-                                              (context, item, isSelected) {
+                                          favoriteItemBuilder: (context, item, isSelected) {
                                             return Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 20,
-                                                      vertical: 10),
+                                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                               decoration: BoxDecoration(
-                                                  border: Border.all(
-                                                      color: Colors.grey),
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                  color: Colors.grey[100]),
+                                                border: Border.all(color: Colors.grey),
+                                                borderRadius: BorderRadius.circular(10),
+                                                color: Colors.grey[100],
+                                              ),
                                               child: Row(
                                                 children: [
                                                   Text(
                                                     item.customer_name_show,
                                                     textAlign: TextAlign.center,
-                                                    style: const TextStyle(
-                                                        color: Colors.indigo),
+                                                    style: const TextStyle(color: Colors.indigo),
                                                   ),
-                                                  const Padding(
-                                                      padding: EdgeInsets.only(
-                                                          left: 8)),
-                                                  isSelected
-                                                      ? const Icon(Icons
-                                                          .check_box_outlined)
-                                                      : const SizedBox.shrink(),
+                                                  const Padding(padding: EdgeInsets.only(left: 8)),
+                                                  isSelected ? const Icon(Icons.check_box_outlined) : const SizedBox.shrink(),
                                                 ],
                                               ),
                                             );
@@ -769,6 +709,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
                       ),
                     ],
                   ),
+
+
                   textField("Remark", "Remark", _locationController),
 
                   // Row(
