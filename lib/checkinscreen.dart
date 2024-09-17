@@ -12,6 +12,7 @@ import 'package:kop_checkin/model/user.dart';
 import 'package:intl/intl.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
 import 'package:kop_checkin/model/user_model.dart';
@@ -72,10 +73,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
     //     position: LatLng(Users.lat, Users.long),
     //     infoWindow: const InfoWindow(title: 'You are Here !'))
   ];
-
+  final GlobalKey<DropdownSearchState<UserModel>> _dropdownSearchKey =
+      GlobalKey<DropdownSearchState<UserModel>>();
   final Completer<GoogleMapController> _controller = Completer();
   final List<Marker> _maker = [];
-  
 
   List<String> officeProvince = [
     "Bangkok",
@@ -127,7 +128,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
       }
     }
     if (permission == LocationPermission.deniedForever) {
-      return Future.error('Location permissin are denied, we cannot request');
+      return Future.error('Location permission are denied, we cannot request');
     }
     return Geolocator.getCurrentPosition();
   }
@@ -358,7 +359,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
     //     markerId: const MarkerId('2'),
     //     position: LatLng(lat, long),
     //     infoWindow: const InfoWindow(
-    //         title: 'My Current Position', snippet: 'ที่อยุ๋ปัจจุบัน'),
+    //         title: 'My Current Position', snippet: 'ที่อยุ่ปัจจุบัน'),
     //   ),
     // );
   }
@@ -544,165 +545,241 @@ class _CheckinScreenState extends State<CheckinScreen> {
                     children: [
                       Expanded(
                         child: Container(
-                          margin: const EdgeInsets.only(bottom: 5),
+                          margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           alignment: Alignment.centerLeft,
                           child: DropdownSearch<UserModel>(
+                            key:
+                                _dropdownSearchKey, // Attach the GlobalKey here
                             items: userList,
-                            dropdownDecoratorProps: const DropDownDecoratorProps(
+                            dropdownDecoratorProps: DropDownDecoratorProps(
                               dropdownSearchDecoration: InputDecoration(
                                 labelText: "Customer",
+                                labelStyle: const TextStyle(
+                                  fontSize: 18, // Adjust the label font size
+                                  color: Color.fromARGB(255, 50, 50,
+                                      50), // Set the color of the label
+                                  fontWeight: FontWeight.w400, // Optional: Change font weight
+                                ),
+                                floatingLabelBehavior: FloatingLabelBehavior
+                                    .always, // Always show the label above the dropdown
                                 filled: true,
+                                fillColor: Colors.grey[
+                                    200], // Optional: Set background color for the dropdown
+                                border: const OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(
+                                      Radius.circular(
+                                          8)), // Customize the border radius
+                                  borderSide: BorderSide(
+                                    color: Color.fromARGB(
+                                        255, 100, 100, 100), // Border color
+                                    width: 1, // Border width
+                                  ),
+                                ),
+                                enabledBorder: const OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(
+                                      Radius.circular(
+                                          8)), // Border radius when enabled
+                                  borderSide: BorderSide(
+                                    color: Color.fromARGB(255, 100, 100,
+                                        100), // Border color for enabled state
+                                    width: 1,
+                                  ),
+                                ),
+                                focusedBorder: const OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(
+                                      Radius.circular(
+                                          8)), // Border radius when focused
+                                  borderSide: BorderSide(
+                                    color: Colors
+                                        .indigo, // Border color for focused state
+                                    width: 1.5,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                    horizontal:
+                                        20), // Adjust padding inside the dropdown
+                              ),
+                              baseStyle: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize:
+                                    13, // Customize the font size of the selected item
+                                color: Color(0xff4962AD),
                               ),
                             ),
                             onChanged: (UserModel? data) => setState(() {
-                              Users.customer = data!.name.toString();
-                              _selectedUser = data;
+                              if (data != null) {
+                                Users.customer = data.customer_name_show
+                                    .toString(); // Update with the correct field
+                                _selectedUser =
+                                    data; // Update the selected user
+                              }
                             }),
-                            selectedItem: _selectedUser,
-                            asyncItems: (filter) => getData(filter),
-                            compareFn: (i, s) => i.isEqual(s),
-                            // Corrected onBeforePopupOpening with parameter
+                            selectedItem:
+                                _selectedUser, // Ensure the correct selected item is displayed
+                            asyncItems: (filter) =>
+                                getData(filter), // Fetching data
+                            compareFn: (i, s) => i.isEqual(
+                                s), // Compare function for selection logic
                             onBeforePopupOpening: (popupProps) async {
-                              // Refresh the location here
+                              // Get the current location before showing the dropdown
                               await _getCurrentLocation().then((value) {
                                 setState(() {
-                                  Users.lat = value.latitude;
+                                  Users.lat =
+                                      value.latitude; // Update lat and long
                                   Users.long = value.longitude;
                                 });
                               });
-                              _goToMe(Users.lat, Users.long);
-                              return true; // Return true to continue opening the popup
+                              _goToMe(
+                                  Users.lat,
+                                  Users
+                                      .long); // Navigate to the user's location
+                              return true;
                             },
-                            popupProps: PopupPropsMultiSelection.modalBottomSheet(
+                            dropdownBuilder: (BuildContext context,
+                                UserModel? selectedItem) {
+                              // Use _selectedUser and display the correct field (customer_name_show)
+                              return AutoSizeText(
+                                _selectedUser != null
+                                    ? _selectedUser!.customer_name_show
+                                        .toString() // Display the modified "customer_name_show"
+                                    : 'Select customer', // Default text if no user is selected
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15, // Max font size
+                                  color: Color(0xff4962AD),
+                                ),
+                                maxLines:
+                                    1, // Ensure the text stays on one line
+                                minFontSize: 12, // Set the minimum font size
+                                overflow: TextOverflow
+                                    .ellipsis, // Truncate with '...'
+                              );
+                            },
+                            popupProps:
+                                PopupPropsMultiSelection.modalBottomSheet(
                               showSearchBox: true,
+                              searchFieldProps: TextFieldProps(
+                                decoration: InputDecoration(
+                                  hintText: 'Search',
+                                  hintStyle: const TextStyle(
+                                      color: Colors
+                                          .grey), // Customize hint text color
+                                  filled: true,
+                                  fillColor: Colors.grey
+                                      .shade200, // Customize background color of the search box
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        10), // Customize border radius of the search box
+                                    borderSide: const BorderSide(
+                                        color: Colors.blue,
+                                        width:
+                                            2), // Customize border color and width
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        10), // Border radius when not focused
+                                    borderSide: const BorderSide(
+                                        color: Colors.grey,
+                                        width:
+                                            1), // Border color and width when enabled
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        10), // Border radius when focused
+                                    borderSide: const BorderSide(
+                                        color: Colors.indigo,
+                                        width:
+                                            1.5), // Border color and width when focused
+                                  ),
+                                ),
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    color:
+                                        Colors.black), // Customize text style
+                              ),
+                              modalBottomSheetProps:
+                                  const ModalBottomSheetProps(
+                                backgroundColor: Color.fromARGB(
+                                    255, 255, 255, 255), // Set background color
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.vertical(
+                                    top: Radius.circular(
+                                        10), // Set the top border radius to 10
+                                  ),
+                                ),
+                              ),
+                              containerBuilder: (context, popupWidget) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(
+                                      top: 10,
+                                      bottom:
+                                          10), // Set padding from above and below
+                                  child: popupWidget,
+                                );
+                              },
                               itemBuilder: _customPopupItemBuilderExample2,
-                              // No need for onBeforePopupOpening here
-                              favoriteItemProps: isOutOfRange(
-                                originLat,
-                                originLng,
-                                Users.lat,
-                                Users.long,
-                                radius,
-                              ) == false
-                                  ? FavoriteItemProps(
-                                      showFavoriteItems: true,
-                                      favoriteItems: (us) {
-                                        var favorites = us
-                                            .where((e) => e.name.contains("O-0040") || e.name.contains("O-0019") || e.name.contains("O-0041"))
-                                            .toList();
-                                        favorites.sort((a, b) {
-                                          if (a.name.contains("O-0019")) {
-                                            return -1;
-                                          } else if (b.name.contains("O-0019")) {
-                                            return 1;
-                                          } else {
-                                            return 0;
-                                          }
-                                        });
-                                        return favorites;
-                                      },
-                                      favoriteItemBuilder: (context, item, isSelected) {
-                                        return Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                          decoration: BoxDecoration(
-                                            border: Border.all(color: Colors.grey),
-                                            borderRadius: BorderRadius.circular(10),
-                                            color: Colors.grey[100],
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Text(
-                                                item.customer_name_show,
-                                                textAlign: TextAlign.center,
-                                                style: const TextStyle(color: Colors.indigo),
-                                              ),
-                                              const Padding(padding: EdgeInsets.only(left: 8)),
-                                              isSelected ? const Icon(Icons.check_box_outlined) : const SizedBox.shrink(),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    )
-                                  : isOutOfRange(rayonglat, rayonglng, Users.lat, Users.long, radius) == false
-                                      ? FavoriteItemProps(
-                                          showFavoriteItems: true,
-                                          favoriteItems: (us) {
-                                            var favorites = us
-                                                .where((e) => e.name.contains("O-0040") || e.name.contains("O-0041") || e.name.contains("O-0039"))
-                                                .toList();
-                                            favorites.sort((a, b) {
-                                              if (a.name.contains("O-0019")) {
-                                                return -1;
-                                              } else if (b.name.contains("O-0019")) {
-                                                return 1;
-                                              } else {
-                                                return 0;
-                                              }
-                                            });
-                                            return favorites;
-                                          },
-                                          favoriteItemBuilder: (context, item, isSelected) {
-                                            return Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                              decoration: BoxDecoration(
-                                                border: Border.all(color: Colors.grey),
-                                                borderRadius: BorderRadius.circular(10),
-                                                color: Colors.grey[100],
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Text(
-                                                    item.customer_name_show,
-                                                    textAlign: TextAlign.center,
-                                                    style: const TextStyle(color: Colors.indigo),
-                                                  ),
-                                                  const Padding(padding: EdgeInsets.only(left: 8)),
-                                                  isSelected ? const Icon(Icons.check_box_outlined) : const SizedBox.shrink(),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        )
-                                      : FavoriteItemProps(
-                                          showFavoriteItems: true,
-                                          favoriteItems: (us) {
-                                            var favorites = us
-                                                .where((e) => e.name.contains("O-0040") || e.name.contains("O-0041"))
-                                                .toList();
-                                            favorites.sort((a, b) {
-                                              if (a.name.contains("O-0019")) {
-                                                return -1;
-                                              } else if (b.name.contains("O-0019")) {
-                                                return 1;
-                                              } else {
-                                                return 0;
-                                              }
-                                            });
-                                            return favorites;
-                                          },
-                                          favoriteItemBuilder: (context, item, isSelected) {
-                                            return Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                              decoration: BoxDecoration(
-                                                border: Border.all(color: Colors.grey),
-                                                borderRadius: BorderRadius.circular(10),
-                                                color: Colors.grey[100],
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Text(
-                                                    item.customer_name_show,
-                                                    textAlign: TextAlign.center,
-                                                    style: const TextStyle(color: Colors.indigo),
-                                                  ),
-                                                  const Padding(padding: EdgeInsets.only(left: 8)),
-                                                  isSelected ? const Icon(Icons.check_box_outlined) : const SizedBox.shrink(),
-                                                ],
-                                              ),
-                                            );
-                                          },
+                              favoriteItemProps: FavoriteItemProps(
+                                showFavoriteItems: true,
+                                favoriteItems: (us) {
+                                  if (!isOutOfRange(originLat, originLng,
+                                      Users.lat, Users.long, radius)) {
+                                    // If within the range of origin, show O-0019, O-0040, O-0041
+                                    return us
+                                        .where((e) =>
+                                            e.name.contains("O-0019") ||
+                                            e.name.contains("O-0040") ||
+                                            e.name.contains("O-0041"))
+                                        .toList();
+                                  } else if (!isOutOfRange(rayonglat, rayonglng,
+                                      Users.lat, Users.long, radius)) {
+                                    // If within the range of Rayong, show O-0040, O-0041, O-0039
+                                    return us
+                                        .where((e) =>
+                                            e.name.contains("O-0040") ||
+                                            e.name.contains("O-0041") ||
+                                            e.name.contains("O-0039"))
+                                        .toList();
+                                  } else {
+                                    // Else show only O-0040 and O-0041
+                                    return us
+                                        .where((e) =>
+                                            e.name.contains("O-0040") ||
+                                            e.name.contains("O-0041"))
+                                        .toList();
+                                  }
+                                },
+                                favoriteItemBuilder:
+                                    (context, item, isSelected) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: Colors.grey),
+                                      borderRadius: BorderRadius.circular(10),
+                                      color: Colors.grey[100],
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          item.customer_name_show,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xff4962AD)),
                                         ),
+                                        const Padding(
+                                            padding: EdgeInsets.only(left: 8)),
+                                        isSelected
+                                            ? const Icon(
+                                                Icons.check_box_outlined)
+                                            : const SizedBox.shrink(),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         ),
@@ -710,8 +787,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
                     ],
                   ),
 
-
-                  textField("Remark", "Remark", _locationController),
+                  textField("Input your reason here...", "Remark",
+                      _locationController),
 
                   // Row(
                   //   children: [
@@ -748,185 +825,208 @@ class _CheckinScreenState extends State<CheckinScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Container(
-                          width: 75,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.grey.shade600,
-                                  blurRadius: 5,
-                                  spreadRadius: 1,
-                                  offset: const Offset(4, 4)),
-                              const BoxShadow(
-                                  color: Colors.white,
-                                  blurRadius: 5,
-                                  spreadRadius: 1,
-                                  offset: Offset(-4, -4))
-                            ],
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(100)),
-                          ),
-                          margin: const EdgeInsets.only(top: 40),
-                          child: MaterialButton(
-                            onPressed: () async {
-                              _getCurrentLocation().then((value) {
-                                setState(() {
-                                  Users.lat = value.latitude;
-                                  Users.long = value.longitude;
-                                });
-                              });
-                              _goToMe(Users.lat, Users.long);
-                            },
-                            color: Colors.blue,
-                            textColor: Colors.white,
-                            padding: const EdgeInsets.all(16),
-                            shape: const CircleBorder(),
-                            child: const Icon(
-                              FontAwesomeIcons.mapLocationDot,
-                              size: 40,
-                            ),
-                          ),
-                        ),
+                        // Container(
+                        //   width: 75,
+                        //   decoration: BoxDecoration(
+                        //     color: Colors.grey.shade300,
+                        //     boxShadow: [
+                        //       BoxShadow(
+                        //           color: Colors.grey.shade600,
+                        //           blurRadius: 5,
+                        //           spreadRadius: 1,
+                        //           offset: const Offset(4, 4)),
+                        //       const BoxShadow(
+                        //           color: Colors.white,
+                        //           blurRadius: 5,
+                        //           spreadRadius: 1,
+                        //           offset: Offset(-4, -4))
+                        //     ],
+                        //     borderRadius:
+                        //         const BorderRadius.all(Radius.circular(100)),
+                        //   ),
+                        //   margin: const EdgeInsets.only(top: 40),
+                        //   child: MaterialButton(
+                        //     onPressed: () async {
+                        //       _getCurrentLocation().then((value) {
+                        //         setState(() {
+                        //           Users.lat = value.latitude;
+                        //           Users.long = value.longitude;
+                        //         });
+                        //       });
+                        //       _goToMe(Users.lat, Users.long);
+                        //     },
+                        //     color: Colors.blue,
+                        //     textColor: Colors.white,
+                        //     padding: const EdgeInsets.all(16),
+                        //     shape: const CircleBorder(),
+                        //     child: const Icon(
+                        //       FontAwesomeIcons.mapLocationDot,
+                        //       size: 40,
+                        //     ),
+                        //   ),
+                        // ),
                         checkIn == '--/--'
                             ? Container(
-                                width: 75,
+                                margin: const EdgeInsets.only(top: 18),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade300,
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color: Colors.grey.shade600,
-                                        blurRadius: 5,
-                                        spreadRadius: 1,
-                                        offset: const Offset(4, 4)),
-                                    const BoxShadow(
-                                        color: Colors.white,
-                                        blurRadius: 5,
-                                        spreadRadius: 1,
-                                        offset: Offset(-4, -4))
-                                  ],
+                                  // boxShadow: [
+                                  //   BoxShadow(
+                                  //       color: Colors.grey.shade600,
+                                  //       blurRadius: 5,
+                                  //       spreadRadius: 1,
+                                  //       offset: const Offset(4, 4)),
+                                  //   const BoxShadow(
+                                  //       color: Colors.white,
+                                  //       blurRadius: 5,
+                                  //       spreadRadius: 1,
+                                  //       offset: Offset(-4, -4))
+                                  // ],
                                   borderRadius: const BorderRadius.all(
-                                      Radius.circular(100)),
+                                      Radius.circular(12)),
                                 ),
-                                margin: const EdgeInsets.only(top: 24),
-                                child: MaterialButton(
-                                  onPressed: () async {
-                                    tz.initializeTimeZone();
-                                    var bangkok =
-                                        tz.getLocation('Asia/Bangkok');
-                                    var now = tz.TZDateTime.now(bangkok);
-                                    String remark =
-                                        _locationController.text.trim();
-                                    if (Users.customer.isEmpty &&
-                                        remark.isEmpty) {
-                                      _showMyDialog('Missing Value',
-                                          'Customer Or Remark are not must be empty!');
-                                    } else {
-                                      _goToMe(Users.lat, Users.long);
-                                      List<Placemark> placemark =
-                                          await placemarkFromCoordinates(
-                                              Users.lat, Users.long);
-                                      now = tz.TZDateTime.now(bangkok);
-                                      setState(() {
-                                        locationCheckin =
-                                            "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}";
-                                        docdate = DateFormat('dd MMMM yyyy')
-                                            .format(now);
-                                      });
+                                child: Center(
+                                  // Centers the button in the container
+                                  child: SizedBox(
+                                    width: MediaQuery.of(context).size.width -
+                                        80, // Screen width minus left and right paddings
+                                    child: MaterialButton(
+                                      onPressed: () async {
+                                        tz.initializeTimeZone();
+                                        var bangkok =
+                                            tz.getLocation('Asia/Bangkok');
+                                        var now = tz.TZDateTime.now(bangkok);
+                                        String remark =
+                                            _locationController.text.trim();
+                                        if (Users.customer.isEmpty &&
+                                            remark.isEmpty) {
+                                          _showMyDialog('Missing Value',
+                                              'Customer Or Remark must not be empty!');
+                                        } else {
+                                          _goToMe(Users.lat, Users.long);
+                                          List<Placemark> placemark =
+                                              await placemarkFromCoordinates(
+                                                  Users.lat, Users.long);
+                                          now = tz.TZDateTime.now(bangkok);
+                                          setState(() {
+                                            locationCheckin =
+                                                "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}";
+                                            docdate = DateFormat('dd MMMM yyyy')
+                                                .format(now);
+                                          });
 
-                                      setState(() {
-                                        checkIn =
-                                            DateFormat('hh:mm').format(now);
-                                        addRecordDetails(
-                                          "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}",
-                                          Users.location_index,
-                                          DateFormat('hh:mm a').format(now),
-                                          DateFormat('yyyy-MM-dd H:m:s')
-                                              .format(now),
-                                        );
-                                      });
-                                    }
-                                  },
-                                  color: Colors.green,
-                                  textColor: Colors.white,
-                                  padding: const EdgeInsets.all(16),
-                                  shape: const CircleBorder(),
-                                  child: const Icon(
-                                    FontAwesomeIcons.arrowRightToBracket,
-                                    size: 40,
+                                          setState(() {
+                                            checkIn =
+                                                DateFormat('hh:mm').format(now);
+                                            addRecordDetails(
+                                              "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}",
+                                              Users.location_index,
+                                              DateFormat('hh:mm a').format(now),
+                                              DateFormat('yyyy-MM-dd H:m:s')
+                                                  .format(now),
+                                            );
+                                          });
+                                        }
+                                      },
+                                      color: Colors.green,
+                                      textColor: Colors.white,
+                                      padding: const EdgeInsets.all(16),
+                                      shape: RoundedRectangleBorder(
+                                        // Rectangular shape with small corner radius
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Text(
+                                        "Check-in",
+                                        style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               )
                             : Container(
-                                width: 75,
+                                margin: const EdgeInsets.only(top: 18),
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade300,
-                                  boxShadow: [
-                                    BoxShadow(
-                                        color: Colors.grey.shade600,
-                                        blurRadius: 5,
-                                        spreadRadius: 1,
-                                        offset: const Offset(4, 4)),
-                                    const BoxShadow(
-                                        color: Colors.white,
-                                        blurRadius: 5,
-                                        spreadRadius: 1,
-                                        offset: Offset(-4, -4))
-                                  ],
+                                  // boxShadow: [
+                                  //   BoxShadow(
+                                  //       color: Colors.grey.shade600,
+                                  //       blurRadius: 5,
+                                  //       spreadRadius: 1,
+                                  //       offset: const Offset(4, 4)),
+                                  //   const BoxShadow(
+                                  //       color: Colors.white,
+                                  //       blurRadius: 5,
+                                  //       spreadRadius: 1,
+                                  //       offset: Offset(-4, -4))
+                                  // ],
                                   borderRadius: const BorderRadius.all(
-                                      Radius.circular(150)),
+                                      Radius.circular(12)),
                                 ),
-                                margin: const EdgeInsets.only(top: 24),
-                                child: MaterialButton(
-                                  onPressed: () async {
-                                    tz.initializeTimeZone();
-                                    var bangkok =
-                                        tz.getLocation('Asia/Bangkok');
-                                    var now = tz.TZDateTime.now(bangkok);
-                                    _getCurrentLocation().then((value) {
-                                      setState(() {
-                                        Users.lat = value.latitude;
-                                        Users.long = value.longitude;
-                                      });
-                                    });
-                                    now = tz.TZDateTime.now(bangkok);
-                                    _goToMe(Users.lat, Users.long);
-                                    List<Placemark> placemark =
-                                        await placemarkFromCoordinates(
-                                            Users.lat, Users.long);
-                                    setState(() {
-                                      locationCheckout =
-                                          "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}";
-                                      docdate = DateFormat('dd MMMM yyyy')
-                                          .format(now);
-                                      updateRecordDetails(
-                                          "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}",
-                                          Users.location_index,
-                                          DateFormat('hh:mm a').format(now),
-                                          DateFormat('yyyy-MM-dd H:m:s')
-                                              .format(now));
-                                      checkOut =
-                                          DateFormat('hh:mm').format(now);
-                                    });
-                                    Timer(const Duration(milliseconds: 5000),
-                                        () {
-                                      setState(() {
-                                        Users.location_index++;
-                                        checkOut = '--/--';
-                                        checkIn = '--/--';
-                                        Users.customer = '';
-                                        _locationController.clear();
-                                        _selectedUser = null;
-                                      });
-                                    });
-                                  },
-                                  color: Colors.red,
-                                  textColor: Colors.white,
-                                  padding: const EdgeInsets.all(16),
-                                  shape: const CircleBorder(),
-                                  child: const Icon(
-                                    FontAwesomeIcons.arrowRightFromBracket,
-                                    size: 40,
+                                child: Center(
+                                  // Centers the button in the container
+                                  child: SizedBox(
+                                    width: MediaQuery.of(context).size.width -
+                                        80, // Screen width minus left and right paddings
+                                    child: MaterialButton(
+                                      onPressed: () async {
+                                        tz.initializeTimeZone();
+                                        var bangkok =
+                                            tz.getLocation('Asia/Bangkok');
+                                        var now = tz.TZDateTime.now(bangkok);
+                                        _getCurrentLocation().then((value) {
+                                          setState(() {
+                                            Users.lat = value.latitude;
+                                            Users.long = value.longitude;
+                                          });
+                                        });
+                                        now = tz.TZDateTime.now(bangkok);
+                                        _goToMe(Users.lat, Users.long);
+                                        List<Placemark> placemark =
+                                            await placemarkFromCoordinates(
+                                                Users.lat, Users.long);
+                                        setState(() {
+                                          locationCheckout =
+                                              "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}";
+                                          docdate = DateFormat('dd MMMM yyyy')
+                                              .format(now);
+                                          updateRecordDetails(
+                                              "${placemark[0].name} ${placemark[0].subLocality} ${placemark[0].thoroughfare} ${placemark[0].subAdministrativeArea}  ${placemark[0].locality} ${placemark[0].administrativeArea} ${placemark[0].postalCode}  ${placemark[0].country}",
+                                              Users.location_index,
+                                              DateFormat('hh:mm a').format(now),
+                                              DateFormat('yyyy-MM-dd H:m:s')
+                                                  .format(now));
+                                          checkOut =
+                                              DateFormat('hh:mm').format(now);
+                                        });
+                                        Timer(
+                                            const Duration(milliseconds: 5000),
+                                            () {
+                                          setState(() {
+                                            Users.location_index++;
+                                            checkOut = '--/--';
+                                            checkIn = '--/--';
+                                            Users.customer = '';
+                                            _locationController.clear();
+                                            _selectedUser = null;
+                                          });
+                                        });
+                                      },
+                                      color: Colors.red,
+                                      textColor: Colors.white,
+                                      padding: const EdgeInsets.all(16),
+                                      shape: RoundedRectangleBorder(
+                                        // Rectangular shape with small corner radius
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Text(
+                                        "Check-out",
+                                        style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -963,8 +1063,7 @@ class _CheckinScreenState extends State<CheckinScreen> {
           child: Text(
             title,
             style: const TextStyle(
-              color: Colors.black54,
-              fontFamily: "NexaBold",
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
@@ -979,8 +1078,8 @@ class _CheckinScreenState extends State<CheckinScreen> {
               hintText: hint,
               hintStyle: const TextStyle(
                 color: Colors.black54,
-                fontFamily: "NexaBold",
                 fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
               enabledBorder: const OutlineInputBorder(
                 borderSide: BorderSide(
@@ -1001,19 +1100,59 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
   Widget _customPopupItemBuilderExample2(
       BuildContext context, UserModel item, bool isSelected) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: !isSelected
-          ? null
-          : BoxDecoration(
-              border: Border.all(color: Theme.of(context).primaryColor),
-              borderRadius: BorderRadius.circular(5),
-              color: Colors.white,
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 0),
+          padding: const EdgeInsets.symmetric(vertical: 0),
+          decoration: !isSelected
+              ? null
+              : BoxDecoration(
+                  border: Border.all(color: Theme.of(context).primaryColor),
+                  borderRadius: BorderRadius.circular(5),
+                  color: Colors.white,
+                ),
+          child: ListTile(
+            selected: isSelected,
+            title: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '${item.code}\n',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xff4962AD),
+                    ),
+                  ),
+                  TextSpan(
+                    text: '${item.nameTH}\n${item.nameEN}\n',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                      color: Colors.black,
+                    ),
+                  ),
+                  TextSpan(
+                    text: '${item.province_th} ${item.tambon_th}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.normal,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
             ),
-      child: ListTile(
-        selected: isSelected,
-        title: Text('${item.nameTH} ${item.nameEN} '),
-      ),
+          ),
+        ),
+        const Divider(
+          color: Colors.grey, // Color of the divider line
+          thickness: 1, // Thickness of the line
+          indent: 16, // Left padding for the divider line
+          endIndent: 16, // Right padding for the divider line
+        ),
+      ],
     );
   }
 

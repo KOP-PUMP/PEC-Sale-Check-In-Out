@@ -63,6 +63,6 @@ class UserModel {
   }
 
   @override
-  String toString() => '$nameTH $nameEN';
+  String toString() => '$customer_name_show';
  
 }
