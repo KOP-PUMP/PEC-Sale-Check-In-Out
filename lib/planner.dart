@@ -49,7 +49,6 @@ class _PlannerState extends State<Planner> {
   String customer = '';
   String check = 'WEEKLY';
 
-  final TextEditingController _controller = new TextEditingController();
   String text = ""; // empty string to carry what was there before it
 
   int maxLength = 10;
@@ -100,7 +99,7 @@ class _PlannerState extends State<Planner> {
   }
 
   void calendarViewChanged(ViewChangedDetails viewChangedDetails) {
-    SchedulerBinding.instance!.addPostFrameCallback((timeStamp) {
+    SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
       _calendarController.selectedDate = null;
     });
   }
@@ -110,9 +109,7 @@ class _PlannerState extends State<Planner> {
     screenHeight = MediaQuery.of(context).size.height;
     screenWidth = MediaQuery.of(context).size.width;
     String dropdownValue = freq.first;
-    String dropdownValueCount = count.first;
     String dropdownValueInterval = interval.first;
-    String dropdownValueDay = day.first;
 
     return (Scaffold(
       body: SafeArea(
@@ -377,8 +374,8 @@ class _PlannerState extends State<Planner> {
                             onSelected: (String? value) {
                               setState(() {
                                 dropdownValue = value!;
-                                check = value!;
-                                typeFreq = value!;
+                                check = value;
+                                typeFreq = value;
                               });
 
                               // This is called when the user selects an item.
@@ -407,7 +404,7 @@ class _PlannerState extends State<Planner> {
                             onSelected: (String? value) {
                               setState(() {
                                 dropdownValueInterval = value!;
-                                intervalRe = value!;
+                                intervalRe = value;
                               });
                               // This is called when the user selects an item.
                             },

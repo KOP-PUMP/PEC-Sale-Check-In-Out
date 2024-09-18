@@ -22,7 +22,6 @@ class _AddCustomerState extends State<AddCustomer> {
   final _customerNameEN = TextEditingController();
   final _customerNameTH = TextEditingController();
   String industry_category = '';
-  @override
   double screenHeight = 0;
   double screenWidth = 0;
 

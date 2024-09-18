@@ -5,7 +5,6 @@ import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:kop_checkin/api/api.dart';
 import 'package:kop_checkin/model/user.dart';

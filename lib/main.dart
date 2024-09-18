@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
@@ -11,7 +10,6 @@ import 'package:month_year_picker/month_year_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:kop_checkin/services/location_service.dart';
 import 'package:in_app_update/in_app_update.dart';
-import 'package:timezone/standalone.dart' as tz;
 
 void main() async {
 

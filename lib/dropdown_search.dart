@@ -3,9 +3,6 @@ import 'package:dropdown_search/dropdown_search.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'model/user_model.dart';
-import 'package:http/http.dart' as http;
-import 'package:kop_checkin/api/api.dart';
-import 'package:kop_checkin/model/user.dart';
 
 class TestDropdown extends StatefulWidget {
   const TestDropdown({super.key});

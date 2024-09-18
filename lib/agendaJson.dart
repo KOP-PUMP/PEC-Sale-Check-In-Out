@@ -337,7 +337,6 @@ class MeetingDataSource extends CalendarDataSource {
   //   // return appointments![index].background;
   // }
 
-  @override
   bool isAll_day(int index) {
     return appointments![index].all_day;
   }
