@@ -84,7 +84,6 @@ class _CheckinScreenState extends State<CheckinScreen> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _maker.addAll(_list);
     _getRecord();
@@ -1125,11 +1124,19 @@ class _CheckinScreenState extends State<CheckinScreen> {
                     ),
                   ),
                   TextSpan(
-                    text: '${item.nameTH}\n${item.nameEN}\n',
+                    text: '${item.nameEN}\n',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.normal,
                       color: Colors.black,
+                    ),
+                  ),
+                  TextSpan(
+                    text: '${item.nameTH}\n',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.normal,
+                      color: Colors.grey[800],
                     ),
                   ),
                   TextSpan(

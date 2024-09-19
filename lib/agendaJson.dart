@@ -1,5 +1,7 @@
+// ignore_for_file: file_names, non_constant_identifier_names
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
@@ -20,35 +22,167 @@ class CalendarExample extends StatefulWidget {
   const CalendarExample({super.key});
 
   @override
-  State<CalendarExample> createState() => _CalendarExampleState();
+  CalendarExampleState createState() => CalendarExampleState();
 }
 
-class _CalendarExampleState extends State<CalendarExample> {
+class CalendarExampleState extends State<CalendarExample> {
   final List<Color> _colorCollection = <Color>[];
   String? _networkStatusMsg;
   final Connectivity _internetConnectivity = Connectivity();
-  double screenHeight = 0;
-  double screenWidth = 0;
-  Color primary = const Color.fromRGBO(12, 45, 92, 1);
-  late List<Meeting> dataSource;
-  String _day = DateFormat('yyyy').format(DateTime.now());
-  Future getAgendar() async {
-    var res = await http.post(Uri.parse(API.getAgenda), body: {
-      'user_code': Users.id,
-      'year': DateFormat('yyyy').format(DateTime.now())
-    });
-    try {
-      return jsonDecode(res.body);
-      // ignore: empty_catches
-    } catch (e) {}
-  }
+  String _currentMonth = DateFormat('MM').format(DateTime.now());
+  String _currentYear = DateFormat('yyyy').format(DateTime.now());
+  String _day = DateFormat('dd MMMM yyyy').format(DateTime.now());
+  String? _lastFetchedTimestamp;
+  Timer? _agendaTimer;
+  Timer? _inactivityTimer;
+  final List<dynamic> _agendaList = [];
 
   @override
   void initState() {
+    super.initState();
     _initializeEventColor();
     _checkNetworkStatus();
+    _fetchAgendaData(_currentYear, _currentMonth);
+    _startAgendaTimer(); // Start the agenda timer
+    _startInactivityTimer(); // Start inactivity timer
+  }
 
-    super.initState();
+  void _fetchAgendaData(String year, String month,
+      {bool forceFetch = false}) async {
+    // Prepare request body with user ID, year, month, and optionally last fetched timestamp
+    var body = {
+      'user_code': Users.id,
+      'year': year,
+      'month': month,
+      if (_lastFetchedTimestamp != null)
+        'lastFetchedTimestamp': _lastFetchedTimestamp
+    };
+
+    try {
+      // Make the API request
+      var res = await http.post(Uri.parse(API.getAgenda), body: body);
+
+      // Parse the response
+      var responseBody = jsonDecode(res.body);
+
+      // Check if the response is a map (error) or a list (valid agenda data)
+      if (responseBody is Map<String, dynamic>) {
+        // Handle error response (e.g., { "success": false })
+        if (responseBody.containsKey('success') &&
+            responseBody['success'] == false) {
+          if (kDebugMode) {
+            print("No new agenda data to fetch.");
+          }
+        } else {
+          // print("Unexpected map response: $responseBody");
+        }
+      } else if (responseBody is List) {
+        // Valid agenda list, append new records
+        setState(() {
+          _agendaList.addAll(responseBody);
+
+          // Update the last fetched timestamp with the timestamp of the latest record
+          _lastFetchedTimestamp = responseBody.last['timestamp'];
+
+        });
+      } else {
+        // print("Unexpected response format: $responseBody");
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error fetching agenda: $e");
+      }
+    }
+  }
+
+  // Method to fetch agenda data externally
+  void fetchData() {
+    _fetchAgendaData(_currentYear, _currentMonth,
+        forceFetch: true); // Force fetching on button press
+  }
+
+  void stopFetching() {
+    // print("Stopping fetching in CalendarExample");
+    _stopAgendaTimer(); // Stop the timer
+  }
+
+  void _startAgendaTimer() {
+    if (_agendaTimer == null || !_agendaTimer!.isActive) {
+      // print("Starting agenda timer...");
+      _agendaTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+        // print("Timer fetching agenda data...");
+        _fetchAgendaData(_currentYear, _currentMonth);
+      });
+    }
+  }
+
+  void _stopAgendaTimer() {
+    if (_agendaTimer != null) {
+      // print("Stopping agenda timer...");
+      _agendaTimer?.cancel();
+    }
+  }
+
+  // Start or restart the inactivity timer
+  void _startInactivityTimer() {
+    // print("Starting inactivity timer...");
+    _inactivityTimer?.cancel();
+    _inactivityTimer = Timer(const Duration(seconds: 10), () {
+      // print("No interaction detected. Stopping agenda timer...");
+      _stopAgendaTimer(); // Stop fetching when inactive
+    });
+  }
+
+  // Reset inactivity timer on interaction
+  void _resetInactivityTimer() {
+    // print("Interaction detected. Resetting inactivity timer...");
+    _startInactivityTimer();
+    // Ensure fetching is running if there was interaction
+    if (_agendaTimer == null || !_agendaTimer!.isActive) {
+      _startAgendaTimer();
+    }
+  }
+
+  // Use onViewChanged to detect month and year changes
+  void _onViewChanged(ViewChangedDetails viewChangedDetails) {
+    DateTime middleVisibleDate = viewChangedDetails
+        .visibleDates[(viewChangedDetails.visibleDates.length / 2).floor()];
+    String month = middleVisibleDate.month.toString().padLeft(2, '0');
+    String year = DateFormat('yyyy').format(middleVisibleDate);
+
+    if (month != _currentMonth || year != _currentYear) {
+      _currentMonth = month;
+      _currentYear = year;
+      _fetchAgendaData(
+          _currentYear, _currentMonth); // Fetch only if new month/year
+    }
+  }
+
+  @override
+  void dispose() {
+    // Cancel both timers when the widget is disposed
+    _agendaTimer?.cancel();
+    _inactivityTimer?.cancel();
+    super.dispose();
+  }
+
+  Future getAgendar(String year, String month) async {
+    var res = await http.post(Uri.parse(API.getAgenda), body: {
+      'user_code': Users.id,
+      'year': year, // Send year as parameter
+      'month': month // Send month as parameter
+    });
+    // print("Status code: ${res.statusCode}");
+    // print("Response body: ${res.body}");
+
+    try {
+      return jsonDecode(res.body);
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error fetching agenda: $e");
+      }
+      return null;
+    }
   }
 
   void selectionChanged(CalendarSelectionDetails calendarSelectionDetails) {
@@ -65,214 +199,176 @@ class _CalendarExampleState extends State<CalendarExample> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: FutureBuilder(
-        future: getDataFromWeb(),
-        builder: (BuildContext context, AsyncSnapshot snapshot) {
-          if (snapshot.data != null) {
-            return SafeArea(
-              child: Column(
-                children: <Widget>[
-                  Expanded(
-                    child: SfCalendar(
-                      view: CalendarView.month,
-                      dataSource: MeetingDataSource(snapshot.data),
-                      initialSelectedDate: DateTime.now(),
-                      onSelectionChanged: selectionChanged,
-                    ),
-                  ),
-                  Expanded(
-                    child: FutureBuilder(
-                        future: getAgendar(),
-                        builder: (context, snapshot) {
-                          return snapshot.hasData
-                              ? ListView.builder(
-                                  itemCount: snapshot.data!.length,
-                                  itemBuilder: (context, index) {
-                                    List list = snapshot.data;
-                                    if (list[index]['docdate'] == _day) {
-                                      return Column(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(0),
-                                            margin: const EdgeInsets.symmetric(
-                                                vertical: 5),
-                                            height: 60,
-                                            color: Colors.blue,
-                                            child: ListTile(
-                                              leading: Column(
-                                                children: <Widget>[
-                                                  const SizedBox(
-                                                    height: 10,
-                                                  ),
-                                                  Text(
-                                                    list[index]
-                                                        ['location_index'],
-                                                    textAlign: TextAlign.center,
-                                                    style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        color: Colors.white,
-                                                        height: 1.5),
-                                                  ),
-                                                ],
-                                              ),
-                                              title: Text(
-                                                list[index]['customer']
-                                                            ?.isNotEmpty ==
-                                                        true
-                                                    ? list[index]['customer']
-                                                    : list[index]['remark'],
-                                                textAlign: TextAlign.center,
-                                                style: const TextStyle(
-                                                    fontSize: 15,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Colors.white),
-                                              ),
-                                            ),
-                                          ),
-                                         
-                                        ],
-                                      );
-                                    } else {
-                                      return const SizedBox();
-                                    }
-                                  })
-                              : const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                        }),
-                  ),
-                  Container(
-                      alignment: Alignment.centerRight,
-                      margin: const EdgeInsets.all(20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Material(
-                            color: Colors.white,
-                            child: Center(
-                              child: Ink(
-                                height: 75,
-                                width: 75,
-                                decoration: const ShapeDecoration(
-                                  color: Colors.green,
-                                  shape: CircleBorder(),
-                                ),
-                                child: IconButton(
-                                  icon: const Icon(
-                                    FontAwesomeIcons.personCirclePlus,
-                                    size: 30,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: _resetInactivityTimer, // Reset timer on interaction
+      onPanDown: (details) => _resetInactivityTimer(), // Reset on any gesture
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: <Widget>[
+              Expanded(
+                child: SfCalendar(
+                  view: CalendarView.month,
+                  dataSource: MeetingDataSource(_agendaList.map((data) {
+                    return Meeting(
+                      eventName: data['customer'],
+                      from: _convertDateFromString(data['timestamp']),
+                      to: _convertDateFromString(data['timestamp']),
+                      all_day: true,
+                    );
+                  }).toList()),
+                  onViewChanged: _onViewChanged,
+                  initialSelectedDate: DateTime.now(),
+                  onSelectionChanged: selectionChanged,
+                ),
+              ),
+              Expanded(
+                child: _agendaList.isNotEmpty
+                    ? ListView.builder(
+                        itemCount: _agendaList.length,
+                        itemBuilder: (context, index) {
+                          if (_agendaList[index]['docdate'] == _day) {
+                            return Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(0),
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 5),
+                                  height: 60,
+                                  color: Colors.blue,
+                                  child: ListTile(
+                                    leading: Column(
+                                      children: <Widget>[
+                                        const SizedBox(height: 10),
+                                        Text(
+                                          _agendaList[index]['location_index'],
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                              height: 1.5),
+                                        ),
+                                      ],
+                                    ),
+                                    title: Text(
+                                      _agendaList[index]['customer']
+                                                  ?.isNotEmpty ==
+                                              true
+                                          ? _agendaList[index]['customer']
+                                          : _agendaList[index]['remark'],
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white),
+                                    ),
                                   ),
-                                  color: Colors.white,
-                                  onPressed: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const AddCustomer()));
-                                  },
                                 ),
-                              ),
-                            ),
+                              ],
+                            );
+                          } else {
+                            return const SizedBox();
+                          }
+                        },
+                      )
+                    : const Center(child: CircularProgressIndicator()),
+              ),
+              Container(
+                alignment: Alignment.centerRight,
+                margin: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Material(
+                      color: Colors.white,
+                      child: Center(
+                        child: Ink(
+                          height: 75,
+                          width: 75,
+                          decoration: const ShapeDecoration(
+                            color: Colors.green,
+                            shape: CircleBorder(),
                           ),
-                          Material(
+                          child: IconButton(
+                            icon: const Icon(
+                              FontAwesomeIcons.personCirclePlus,
+                              size: 30,
+                            ),
                             color: Colors.white,
-                            child: Center(
-                              child: Ink(
-                                height: 75,
-                                width: 75,
-                                decoration: const ShapeDecoration(
-                                  color: Colors.lightBlue,
-                                  shape: CircleBorder(),
-                                ),
-                                child: IconButton(
-                                  icon: const Icon(
-                                    FontAwesomeIcons.fileSignature,
-                                    size: 30,
-                                  ),
-                                  color: Colors.white,
-                                  onPressed: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                const Planner()));
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          MaterialButton(
-                            onPressed: () async {
-                              SharedPreferences preferences =
-                                  await SharedPreferences.getInstance();
-                              await preferences.clear();
-                              // ignore: use_build_context_synchronously
+                            onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                        const KeyboardVisibilityProvider(
-                                          child: LoginScreen(),
-                                        )),
+                                  builder: (context) => const AddCustomer(),
+                                ),
                               );
                             },
-                            color: Colors.red,
-                            textColor: Colors.white,
-                            padding: const EdgeInsets.all(16),
-                            shape: const CircleBorder(),
-                            child: const Icon(
-                              Icons.logout,
-                              size: 40,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Material(
+                      color: Colors.white,
+                      child: Center(
+                        child: Ink(
+                          height: 75,
+                          width: 75,
+                          decoration: const ShapeDecoration(
+                            color: Colors.lightBlue,
+                            shape: CircleBorder(),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(
+                              FontAwesomeIcons.fileSignature,
+                              size: 30,
+                            ),
+                            color: Colors.white,
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const Planner(),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    MaterialButton(
+                      onPressed: () async {
+                        SharedPreferences preferences =
+                            await SharedPreferences.getInstance();
+                        await preferences.clear();
+                        Navigator.push(
+                          // ignore: use_build_context_synchronously
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const KeyboardVisibilityProvider(
+                              child: LoginScreen(),
                             ),
                           ),
-                        ],
-                      )),
-                ],
+                        );
+                      },
+                      color: Colors.red,
+                      textColor: Colors.white,
+                      padding: const EdgeInsets.all(16),
+                      shape: const CircleBorder(),
+                      child: const Icon(
+                        Icons.logout,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-          } else {
-            return Center(
-              child: Text('$_networkStatusMsg'),
-            );
-          }
-        },
+            ],
+          ),
+        ),
       ),
     );
-  }
-
-  Future<List<Meeting>> getDataFromWeb() async {
-    var data = await http.post(
-        Uri.parse(
-            "https://www.project1.ts2337.com/checkin_App/api_sql/user/getAgenda.php"),
-        body: {
-          'user_code': Users.id,
-          'year': DateFormat('yyyy').format(DateTime.now())
-        });
-    var jsonData = json.decode(data.body);
-
-    final List<Meeting> appointmentData = [];
-    // final Random random = new Random();
-    try {
-      for (var data in jsonData) {
-        Meeting meetingData = Meeting(
-            eventName: data['customer'],
-            from: _convertDateFromString(
-              data['timestamp'],
-            ),
-            to: _convertDateFromString(data['timestamp']),
-            // background: _colorCollection[random.nextInt(9)],
-            all_day: true);
-        appointmentData.add(meetingData);
-        setState(() {
-          dataSource = appointmentData;
-        });
-      }
-      // ignore: empty_catches
-    } catch (e) {}
-
-    return appointmentData;
   }
 
   DateTime _convertDateFromString(String date) {
@@ -332,23 +428,16 @@ class MeetingDataSource extends CalendarDataSource {
     return appointments![index].eventName;
   }
 
-  // @override
-  // Color getColor(int index) {
-  //   // return appointments![index].background;
-  // }
-
   bool isAll_day(int index) {
     return appointments![index].all_day;
   }
 }
 
 class Meeting {
-  // ignore: non_constant_identifier_names
   Meeting({this.eventName, this.from, this.to, this.all_day = true});
 
   String? eventName;
   DateTime? from;
   DateTime? to;
-  // ignore: non_constant_identifier_names
   bool? all_day;
 }
