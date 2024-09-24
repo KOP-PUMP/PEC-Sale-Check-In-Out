@@ -43,19 +43,19 @@ dependencies:
   image_picker: ^1.0.4
   geolocator: ^13.0.1
   url_launcher: ^6.2.1
-  google_maps_flutter: ^2.5.0
+  google_maps_flutter: ^2.9.0
   intl: ^0.19.0
   flutter_launcher_icons: ^0.13.1
   dropdown_search: ^5.0.6
   in_app_update: ^4.2.2
   dio: ^5.4.0
-  connectivity: ^3.0.3
+  connectivity_plus: ^6.0.5
   flex_color_picker: ^3.3.0
   multiselect: ^0.1.0
   cron: ^0.6.0
   timezone: ^0.9.1
   syncfusion_flutter_calendar: ^26.2.11
-  flutter_android_developer_mode: ^1.0.0
+  # flutter_android_developer_mode: ^1.0.0
   auto_size_text: ^3.0.0
 
 flutter_icons:

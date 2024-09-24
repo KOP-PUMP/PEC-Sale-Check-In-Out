@@ -16,7 +16,8 @@ import 'package:kop_checkin/model/user.dart';
 import 'package:kop_checkin/planner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import 'package:connectivity/connectivity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
 
 class CalendarExample extends StatefulWidget {
   const CalendarExample({super.key});
@@ -389,23 +390,23 @@ class CalendarExampleState extends State<CalendarExample> {
   }
 
   void _checkNetworkStatus() {
-    _internetConnectivity.onConnectivityChanged
-        .listen((ConnectivityResult result) {
-      setState(() {
-        _networkStatusMsg = result.toString();
-        if (_networkStatusMsg == "ConnectivityResult.mobile") {
-          _networkStatusMsg =
-              "You are connected to mobile network, loading calendar data ....";
-        } else if (_networkStatusMsg == "ConnectivityResult.wifi") {
-          _networkStatusMsg =
-              "You are connected to wifi network, loading calendar data ....";
-        } else {
-          _networkStatusMsg =
-              "Internet connection may not be available. Connect to another network";
-        }
-      });
+  _internetConnectivity.onConnectivityChanged
+      .listen((List<ConnectivityResult> results) {
+    setState(() {
+      if (results.contains(ConnectivityResult.mobile)) {
+        _networkStatusMsg =
+            "You are connected to mobile network, loading calendar data ....";
+      } else if (results.contains(ConnectivityResult.wifi)) {
+        _networkStatusMsg =
+            "You are connected to wifi network, loading calendar data ....";
+      } else {
+        _networkStatusMsg =
+            "Internet connection may not be available. Connect to another network";
+      }
     });
-  }
+  });
+}
+
 }
 
 class MeetingDataSource extends CalendarDataSource {
