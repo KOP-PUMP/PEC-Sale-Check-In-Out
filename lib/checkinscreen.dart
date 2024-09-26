@@ -37,10 +37,10 @@ class _CheckinScreenState extends State<CheckinScreen> {
   double R = 6378137; // Earth's radius in meters
   double originLat = 13.6566; // Example origin latitude
   double originLng = 100.4682; // Example origin longitude
-  double rayonglat = 12.689955701966637; // Example new longitude
-  double rayonglng = 101.24222335507092; // Example new longitude
+  double rayonglat = 12.691189895123365; // Example new longitude 
+  double rayonglng = 101.24271246533687; // Example new longitude 
 
-  double radius = 50; // Radius in meters
+  double radius = 100; // Radius in meters
 
   double screenHeight = 0;
   double screenWidth = 0;
