@@ -57,6 +57,11 @@ dependencies:
   syncfusion_flutter_calendar: ^26.2.11
   # flutter_android_developer_mode: ^1.0.0
   auto_size_text: ^3.0.0
+  pubspec_parse: ^1.4.0
+  package_info_plus: ^8.0.0
+  http: ^1.2.2
+  device_info_plus: ^11.3.0
+
 
 flutter_icons:
   android: true

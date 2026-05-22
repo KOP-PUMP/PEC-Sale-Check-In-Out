@@ -9,7 +9,6 @@ class UserModel {
   final String tambon_th;
   final String address_en;
 
-
   final String customer_name_show;
   // final String avatar;
 
@@ -64,5 +63,5 @@ class UserModel {
 
   @override
   String toString() => '$customer_name_show';
- 
 }
+
