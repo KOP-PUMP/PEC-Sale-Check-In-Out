@@ -33,7 +33,7 @@ class _AddCustomerState extends State<AddCustomer> {
     //   'user_code': Users.id,
     // });
     var response = await Dio().get(
-      "https://www.project1.ts2337.com/checkin_App/api_sql/user/getIndustry.php",
+      "https://www.pecsystem.net/check-in/getIndustry.php",
       queryParameters: {"filter": filter},
     );
 

@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   double screenHeight = 0;
   double screenWidth = 0;
-
+  bool _isLoadingButtonClick = false;
   Color primary = const Color.fromRGBO(12, 45, 92, 1);
 
   final _emailController = TextEditingController();
@@ -44,8 +44,39 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (e) {
-      showSnackBar('Error orred');
+      _showMyDialog('Network Error', "Cannot connect with data base");
+    } finally {
+      setState(() {
+        _isLoadingButtonClick = false;
+      });
     }
+  }
+
+  Future<void> _showMyDialog(String title, String text) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(text),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -103,90 +134,89 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 25.0),
                     child: GestureDetector(
                       onTap: () async {
-                        FocusScope.of(context).unfocus();
-                        String email = _emailController.text.trim();
-                        String password = _passwordController.text.trim();
-                        if (email.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text("Email in still empty!")));
-                        } else if (password.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text("Paswword in still empty !")));
-                        } else {
-                          var res =
-                              await http.post(Uri.parse(API.login), body: {
-                            'username': _emailController.text.trim(),
-                            'password': _passwordController.text.trim()
+                        setState(() {
+                          _isLoadingButtonClick = true;
+                        });
+                        try {
+                          FocusScope.of(context).unfocus();
+                          String email = _emailController.text.trim();
+                          String password = _passwordController.text.trim();
+                          if (email.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text("Email in still empty!")));
+                          } else if (password.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content:
+                                        Text("Paswword in still empty !")));
+                          } else {
+                            var res =
+                                await http.post(Uri.parse(API.login), body: {
+                              'username': _emailController.text.trim(),
+                              'password': _passwordController.text.trim()
+                            }).timeout(const Duration(seconds: 10));
+
+                            if (res.statusCode == 200) {
+                              var resBody = jsonDecode(res.body);
+                              if (resBody['success'] == true) {
+                                showSnackBar('Login Suceess');
+                                setState(() {
+                                  Users.username = resBody['username'];
+                                  Users.id = resBody['user_id'];
+                                  // Users.name_surname_en =
+                                  //     resBody['name_surname_en'];
+                                  // Users.name_surname_th =
+                                  //     resBody['name_surname_th'];
+                                  Users.pec_group = resBody['pec_group'];
+                                  Users.department = resBody['department'];
+                                  Users.position = resBody['position'];
+                                  Users.check_out_quota =
+                                      int.parse(resBody['check_out_quota']);
+                                  Users.additional_quota =
+                                      int.parse(resBody['additional_quota']);
+                                });
+
+                                sharedPreferences =
+                                    await SharedPreferences.getInstance();
+                                sharedPreferences.setString(
+                                    'username', resBody['username']);
+                                // sharedPreferences.setString('name_surname_en',
+                                //     resBody['name_surname_en']);
+                                // sharedPreferences.setString('name_surname_th',
+                                //     resBody['name_surname_th']);
+                                sharedPreferences.setString(
+                                    'pec_group', resBody['pec_group']);
+                                sharedPreferences.setString(
+                                    'department', resBody['department']);
+                                sharedPreferences.setString(
+                                    'position', resBody['position']);
+                                sharedPreferences.setString(
+                                    'employeeID', resBody['user_id']);
+                                sharedPreferences.setInt('check_out_quota',
+                                    int.parse(resBody['check_out_quota']));
+                                sharedPreferences.setInt('additional_quota',
+                                    int.parse(resBody['additional_quota']));
+                                sharedPreferences
+                                    .setString('employeeUser', email)
+                                    .then((_) {
+                                  Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              const HomeScreeen()));
+                                });
+                              } else {
+                                _showMyDialog("Login error", "Incorrect username or password");
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          _showMyDialog("Network Error", "Error cannot connect to database");
+                        } finally {
+                          setState(() {
+                            _isLoadingButtonClick = false;
                           });
-
-                          if (res.statusCode == 200) {
-                            var resBody = jsonDecode(res.body);
-                            if (resBody['success'] == true) {
-                              showSnackBar('Login Suceess');
-                              setState(() {
-                                Users.username = resBody['username'];
-                                Users.id = resBody['user_id'];
-                                // Users.name_surname_en =
-                                //     resBody['name_surname_en'];
-                                // Users.name_surname_th =
-                                //     resBody['name_surname_th'];
-                                Users.pec_group = resBody['pec_group'];
-                                Users.department = resBody['department'];
-                                Users.position = resBody['position'];
-                              });
-
-                              sharedPreferences =
-                                  await SharedPreferences.getInstance();
-                              sharedPreferences.setString('username',
-                                  resBody['username']);
-                              // sharedPreferences.setString('name_surname_en',
-                              //     resBody['name_surname_en']);
-                              // sharedPreferences.setString('name_surname_th',
-                              //     resBody['name_surname_th']);
-                              sharedPreferences.setString(
-                                  'pec_group', resBody['pec_group']);
-                              sharedPreferences.setString(
-                                  'department', resBody['department']);
-                              sharedPreferences.setString(
-                                  'position', resBody['position']);
-                              sharedPreferences.setString(
-                                  'employeeID', resBody['user_id']);
-                              sharedPreferences
-                                  .setString('employeeUser', email)
-                                  .then((_) {
-                                Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            const HomeScreeen()));
-                              });
-                            } else {
-                              showSnackBar('User or Password is Incorrect');
-                            }
-                          }
-            
-
-                          try {
-                          
-                          } catch (e) {
-                            String error = '';
-
-                            if (e.toString() ==
-                                "RangeError (index): Invalid value: Valid value range is empty: 0") {
-                              setState(() {
-                                error = 'Employee is not exist';
-                              });
-                            } else {
-                              setState(() {
-                                error = 'Error occured';
-                              });
-                            }
-                            // ignore: use_build_context_synchronously
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(SnackBar(content: Text(error)));
-                          }
                         }
                       },
                       child: Container(
@@ -194,14 +224,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: BoxDecoration(
                             color: primary,
                             borderRadius: BorderRadius.circular(12)),
-                        child: const Center(
-                          child: Text(
-                            'Login',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18),
-                          ),
+                        child: Center(
+                            child: _isLoadingButtonClick
+                                ? const Center(
+                                child:
+                                CircularProgressIndicator())
+                                : const Text(
+                              "Login",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18),
+                            )
+                          ,
                         ),
                       ),
                     ),

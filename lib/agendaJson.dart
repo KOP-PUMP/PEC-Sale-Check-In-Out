@@ -9,11 +9,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 // ignore: depend_on_referenced_packages
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:kop_checkin/addcustomer.dart';
+/*import 'package:kop_checkin/addcustomer.dart';*/
 import 'package:kop_checkin/api/api.dart';
 import 'package:kop_checkin/login.dart';
 import 'package:kop_checkin/model/user.dart';
-import 'package:kop_checkin/planner.dart';
+/*import 'package:kop_checkin/planner.dart';*/
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -276,78 +276,19 @@ class CalendarExampleState extends State<CalendarExample> {
                     : const Center(child: CircularProgressIndicator()),
               ),
               Container(
-                alignment: Alignment.centerRight,
                 margin: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Material(
-                      color: Colors.white,
-                      child: Center(
-                        child: Ink(
-                          height: 75,
-                          width: 75,
-                          decoration: const ShapeDecoration(
-                            color: Colors.green,
-                            shape: CircleBorder(),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              FontAwesomeIcons.personCirclePlus,
-                              size: 30,
-                            ),
-                            color: Colors.white,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AddCustomer(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    Material(
-                      color: Colors.white,
-                      child: Center(
-                        child: Ink(
-                          height: 75,
-                          width: 75,
-                          decoration: const ShapeDecoration(
-                            color: Colors.lightBlue,
-                            shape: CircleBorder(),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(
-                              FontAwesomeIcons.fileSignature,
-                              size: 30,
-                            ),
-                            color: Colors.white,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const Planner(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    MaterialButton(
+                child:   SizedBox(
+                    width: double.infinity, // Full width of the screen
+                    child: MaterialButton(
                       onPressed: () async {
                         SharedPreferences preferences =
-                            await SharedPreferences.getInstance();
+                        await SharedPreferences.getInstance();
                         await preferences.clear();
                         Navigator.push(
                           // ignore: use_build_context_synchronously
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                const KeyboardVisibilityProvider(
+                            builder: (context) => const KeyboardVisibilityProvider(
                               child: LoginScreen(),
                             ),
                           ),
@@ -356,14 +297,101 @@ class CalendarExampleState extends State<CalendarExample> {
                       color: Colors.red,
                       textColor: Colors.white,
                       padding: const EdgeInsets.all(16),
-                      shape: const CircleBorder(),
+                      shape: RoundedRectangleBorder( // make it rectangle with small radius
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: const Icon(
                         Icons.logout,
                         size: 40,
                       ),
                     ),
-                  ],
-                ),
+                  )
+                // child: Row(
+                //   mainAxisAlignment: MainAxisAlignment.end,
+                //   children: [
+                //     /*Material(
+                //       color: Colors.white,
+                //       child: Center(
+                //         child: Ink(
+                //           height: 75,
+                //           width: 75,
+                //           decoration: const ShapeDecoration(
+                //             color: Colors.green,
+                //             shape: CircleBorder(),
+                //           ),
+                //           child: IconButton(
+                //             icon: const Icon(
+                //               FontAwesomeIcons.personCirclePlus,
+                //               size: 30,
+                //             ),
+                //             color: Colors.white,
+                //             onPressed: () {
+                //               Navigator.push(
+                //                 context,
+                //                 MaterialPageRoute(
+                //                   builder: (context) => const AddCustomer(),
+                //                 ),
+                //               );
+                //             },
+                //           ),
+                //         ),
+                //       ),
+                //     ),*/
+                //     /*Material(
+                //       color: Colors.white,
+                //       child: Center(
+                //         child: Ink(
+                //           height: 75,
+                //           width: 75,
+                //           decoration: const ShapeDecoration(
+                //             color: Colors.lightBlue,
+                //             shape: CircleBorder(),
+                //           ),
+                //           child: IconButton(
+                //             icon: const Icon(
+                //               FontAwesomeIcons.fileSignature,
+                //               size: 30,
+                //             ),
+                //             color: Colors.white,
+                //             onPressed: () {
+                //               Navigator.push(
+                //                 context,
+                //                 MaterialPageRoute(
+                //                   builder: (context) => const Planner(),
+                //                 ),
+                //               );
+                //             },
+                //           ),
+                //         ),
+                //       ),
+                //     ),*/
+                //     MaterialButton(
+                //       onPressed: () async {
+                //         SharedPreferences preferences =
+                //             await SharedPreferences.getInstance();
+                //         await preferences.clear();
+                //         Navigator.push(
+                //           // ignore: use_build_context_synchronously
+                //           context,
+                //           MaterialPageRoute(
+                //             builder: (context) =>
+                //                 const KeyboardVisibilityProvider(
+                //               child: LoginScreen(),
+                //             ),
+                //           ),
+                //         );
+                //       },
+                //       color: Colors.red,
+                //       textColor: Colors.white,
+                //       padding: const EdgeInsets.all(16),
+                //       shape: const CircleBorder(),
+                //       child: const Icon(
+                //         Icons.logout,
+                //         size: 40,
+                //       ),
+                //     ),
+                //   ],
+                // ),
               ),
             ],
           ),

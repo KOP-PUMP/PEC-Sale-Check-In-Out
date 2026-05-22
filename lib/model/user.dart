@@ -13,4 +13,7 @@ class Users {
   static int location_index = 1;
   static String office = '';
   static String customer = '';
+  static int check_out_quota = 0;
+  static int additional_quota = 0;
+  static int force_checkout_count = 0;
 }
