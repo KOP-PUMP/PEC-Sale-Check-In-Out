@@ -261,57 +261,59 @@ class _HomeScreeenState extends State<HomeScreeen> {
         //     _showUpdateDialog(store.toString());
         //   }
         // }
-        final installed = await getInstalledVersion();
-        final store = await getAppStoreVersion();
-        debugPrint('Installed version: $installed, Store version: $store');
+        if (Platform.isIOS) {
+          final installed = await getInstalledVersion();
+          final store = await getAppStoreVersion();
+          debugPrint('Installed version: $installed, Store version: $store');
 
-        // Compare two version numbers
-        bool compareVersion(String version1, String version2) {
-          // Split versions into parts (major, minor, patch)
-          List<int> v1Parts = version1.split('.').map((e) => int.parse(e)).toList();
-          List<int> v2Parts = version2.split('.').map((e) => int.parse(e)).toList();
+          // Compare two version numbers
+          bool compareVersion(String version1, String version2) {
+            // Split versions into parts (major, minor, patch)
+            List<int> v1Parts = version1.split('.').map((e) => int.parse(e)).toList();
+            List<int> v2Parts = version2.split('.').map((e) => int.parse(e)).toList();
 
-          // Compare each part of the version (major, minor, patch)
-          for (int i = 0; i < 3; i++) {
-            final v1 = i < v1Parts.length ? v1Parts[i] : 0;
-            final v2 = i < v2Parts.length ? v2Parts[i] : 0;
+            // Compare each part of the version (major, minor, patch)
+            for (int i = 0; i < 3; i++) {
+              final v1 = i < v1Parts.length ? v1Parts[i] : 0;
+              final v2 = i < v2Parts.length ? v2Parts[i] : 0;
 
-            if (v1 < v2) return true;  // Version 1 is smaller
-            if (v1 > v2) return false; // Version 1 is larger
+              if (v1 < v2) return true;  // Version 1 is smaller
+              if (v1 > v2) return false; // Version 1 is larger
+            }
+
+            return false; // Versions are equal
           }
 
-          return false; // Versions are equal
-        }
+          Future<bool> checkVPNActive() async {
+            try {
+              List<NetworkInterface> interfaces = await NetworkInterface.list(
+                includeLoopback: false,
+                type: InternetAddressType.any,
+              );
+              print(interfaces);
+              bool isVPNActive = interfaces.any((interface)=>interface.name.contains("tun") ||
+                  interface.name.contains("ppp") ||
+                  interface.name.contains("pptp") ||
+                  interface.name.contains("utun"));
 
-        Future<bool> checkVPNActive() async {
-          try {
-            List<NetworkInterface> interfaces = await NetworkInterface.list(
-              includeLoopback: false,
-              type: InternetAddressType.any,
-            );
-            print(interfaces);
-            bool isVPNActive = interfaces.any((interface)=>interface.name.contains("tun") ||
-                interface.name.contains("ppp") ||
-                interface.name.contains("pptp") ||
-                interface.name.contains("utun"));
-
-            _showVPNBlockDialog(interfaces.toString());
-            if (isVPNActive){
-              return true;
-            } else {
+              _showVPNBlockDialog(interfaces.toString());
+              if (isVPNActive){
+                return true;
+              } else {
+                return false;
+              }
+            }catch (e) {
               return false;
             }
-          }catch (e) {
-            return false;
           }
-        }
 
-        bool isUpdateAvailable = compareVersion(installed, store.toString());
-        checkVPNActive();
+          bool isUpdateAvailable = compareVersion(installed, store.toString());
+          //checkVPNActive();
 
-        if (isUpdateAvailable) {
-          // Version mismatch — prompt to update
-          _showUpdateDialog(store.toString());
+          if (isUpdateAvailable) {
+            // Version mismatch — prompt to update
+            _showUpdateDialog(store.toString());
+          }
         }
       }catch(e){
         debugPrint('Version check error : $e');
